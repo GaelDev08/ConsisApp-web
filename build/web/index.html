@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <!--
+    / es reemplazado por `flutter build web` según --base-href.
+    Para Vercel (raíz del dominio) se resuelve a "/" por defecto.
+  -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description"
+        content="ConsisApp — Hiperenfoque y consistencia: un solo objetivo activo, peso semanal, semáforo nutricional y bitácora de fricciones.">
+  <meta name="theme-color" content="#121218">
+
+  <title>ConsisApp</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #121218;
+    }
+    /* Splash mínimo mientras carga el engine de Flutter */
+    #boot {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-family: system-ui, sans-serif;
+      color: #94a3b8;
+      z-index: 9999;
+    }
+    #boot .ring {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 3px solid #2e2e3e;
+      border-top-color: #8b5cf6;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="boot">
+    <div class="ring"></div>
+    <div>Cargando ConsisApp…</div>
+  </div>
+
+  <!-- Elimina el splash cuando Flutter pinta su primer frame -->
+  <script>
+    window.addEventListener("flutter-first-frame", function () {
+      var boot = document.getElementById("boot");
+      if (boot) { boot.remove(); }
+    });
+  </script>
+
+  <!-- Bootstrap estándar de Flutter Web (>= 3.22) -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
