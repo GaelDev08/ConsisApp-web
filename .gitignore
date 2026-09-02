@@ -1,0 +1,59 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+
+# Excluye TODO build/ excepto build/web/ (que se sirve en Vercel)
+/build/*
+!/build/web/
+!/build/web/**
+
+# Symbolication & obfuscation related
+app.*.symbols
+app.*.map.json
+
+# Android Studio build artifacts
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Basura local (no subir)
+nul
+build_log.txt
+
+# Scripts de build local (opcional; si no quieres subirlos descomenta):
+#build_apk.ps1
+#build_web.cmd
+#build_all.ps1
+#fix_and_build.ps1
+#install_apk.cmd
+#build_apk.cmd

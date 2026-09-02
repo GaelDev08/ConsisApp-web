@@ -1,0 +1,10 @@
+{
+  "name": "ConsisApp",
+  "short_name": "ConsisApp",
+  "description": "Hiperenfoque y consistencia: un solo objetivo activo, peso semanal, semáforo nutricional y bitácora de fricciones.",
+  "lang": "es",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#121218",
+  "theme_color": "#121218"
+}

@@ -1,0 +1,48 @@
+name: consis_app
+description: >-
+  ConsisApp — Hiperenfoque y consistencia. Un solo objetivo activo a la vez,
+  control de peso semanal, semáforo nutricional y bitácora de fricciones.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- Gestión de estado ---
+  flutter_riverpod: ^2.5.1
+
+  # --- Persistencia local (Web/IndexedDB + Mobile/Nativo) ---
+  # hive_ce = Community Edition, fork mantenido del paquete `hive`.
+  # Misma API (Box, TypeAdapter, Hive.initFlutter). En Web usa IndexedDB
+  # automáticamente vía hive_ce_flutter; en móvil usa archivos locales.
+  hive_ce: ^2.6.0
+  hive_ce_flutter: ^2.0.0
+
+  # --- Utilidades ---
+  uuid: ^4.4.0
+  intl: ^0.19.0
+
+  # --- Seguridad híbrida (PIN + Biometría) ---
+  # Almacenamiento seguro: Keystore (Android) / Keychain (iOS) /
+  # WebCrypto (web, solo HTTPS — Vercel ✓)
+  flutter_secure_storage: ^9.2.4
+  # Biometría móvil (NO soporta web: en navegador caemos a PIN directo)
+  local_auth: ^3.0.2
+  # Hash del PIN: PBKDF2-HMAC-SHA256 con sal aleatoria
+  crypto: ^3.0.5
+
+  # --- Visualización (se usan desde Fase 2/4) ---
+  fl_chart: ^0.68.0
+  table_calendar: ^3.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
