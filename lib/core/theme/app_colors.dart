@@ -45,4 +45,14 @@ abstract final class AppColors {
         return textMuted;
     }
   }
+
+  /// Paleta de fondos configurables (selector "Color de fondo" en Metas).
+  static const List<({int value, String label})> backgroundPresets =
+      <({int value, String label})>[
+    (value: 0xFF121218, label: 'Negro profundo'),
+    (value: 0xFF16202E, label: 'Azul petróleo'),
+    (value: 0xFF1B2A22, label: 'Verde bosque'),
+    (value: 0xFF2A1B2E, label: 'Púrpura oscuro'),
+    (value: 0xFF2E1F16, label: 'Café'),
+];
 }

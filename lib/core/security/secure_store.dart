@@ -12,6 +12,7 @@ abstract final class SecureStoreKeys {
   static const String aesKey = 'aes_key_b64';
   static const String biometricEnabled = 'biometric_enabled';
   static const String lockTimeoutSeconds = 'lock_timeout_seconds';
+  static const String accountEmail = 'account_email';
 }
 
 /// Wrapper tipado sobre FlutterSecureStorage.
@@ -93,4 +94,13 @@ final class SecureStore {
         key: SecureStoreKeys.lockTimeoutSeconds,
         value: '$seconds',
       );
+
+  // ---- Cuenta ----
+
+  /// Email de la cuenta usada (se guarda localmente para prefil y estado).
+  Future<void> saveAccountEmail(String email) =>
+      _storage.write(key: SecureStoreKeys.accountEmail, value: email);
+
+  Future<String?> accountEmail() =>
+      _storage.read(key: SecureStoreKeys.accountEmail);
 }

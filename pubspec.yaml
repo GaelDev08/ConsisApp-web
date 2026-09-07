@@ -26,6 +26,11 @@ dependencies:
   uuid: ^4.4.0
   intl: ^0.19.0
 
+  # --- Backend / Cuenta (Supabase) ---
+  # Permite "¿estás registrado?" y sincronización entre dispositivos.
+  # Las credenciales van por --dart-define (no en el repo).
+  supabase_flutter: ^2.5.3
+
   # --- Seguridad híbrida (PIN + Biometría) ---
   # Almacenamiento seguro: Keystore (Android) / Keychain (iOS) /
   # WebCrypto (web, solo HTTPS — Vercel ✓)
@@ -38,6 +43,11 @@ dependencies:
   # --- Visualización (se usan desde Fase 2/4) ---
   fl_chart: ^0.68.0
   table_calendar: ^3.1.2
+
+  # --- Notificaciones locales (recordatorios de metas con horario) ---
+  # No soportadas en Web: se omiten automáticamente (kIsWeb); en mobile sí.
+  flutter_local_notifications: ^17.2.4
+  timezone: ^0.9.2
 
 dev_dependencies:
   flutter_test:

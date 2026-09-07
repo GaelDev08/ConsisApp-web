@@ -15,14 +15,22 @@ class AppSettings {
   static const int minWeekday = 1;
   static const int maxWeekday = 7;
 
+  /// Color ARGB por defecto del fondo de la app (negro premium de ConsisApp).
+  /// Se guarda como int para que la entidad de dominio siga pura (sin Flutter).
+  static const int defaultBgColor = 0xFF121218;
+
   final String id;
   final String activeGoalId;
   final int weighInWeekday;
+
+  /// Color ARGB del fondo (0xAARRGGBB; por defecto [defaultBgColor]).
+  final int backgroundColorValue;
 
   const AppSettings({
     this.id = singletonId,
     this.activeGoalId = '',
     this.weighInWeekday = DateTime.monday,
+    this.backgroundColorValue = defaultBgColor,
   }) : assert(
           weighInWeekday >= minWeekday && weighInWeekday <= maxWeekday,
           'weighInWeekday debe estar entre 1 (lunes) y 7 (domingo)',
@@ -34,11 +42,13 @@ class AppSettings {
     String? id,
     String? activeGoalId,
     int? weighInWeekday,
+    int? backgroundColorValue,
   }) {
     return AppSettings(
       id: id ?? this.id,
       activeGoalId: activeGoalId ?? this.activeGoalId,
       weighInWeekday: weighInWeekday ?? this.weighInWeekday,
+      backgroundColorValue: backgroundColorValue ?? this.backgroundColorValue,
     );
   }
 
@@ -48,13 +58,15 @@ class AppSettings {
       (other is AppSettings &&
           other.id == id &&
           other.activeGoalId == activeGoalId &&
-          other.weighInWeekday == weighInWeekday);
+          other.weighInWeekday == weighInWeekday &&
+          other.backgroundColorValue == backgroundColorValue);
 
   @override
-  int get hashCode => Object.hash(id, activeGoalId, weighInWeekday);
+  int get hashCode => Object.hash(id, activeGoalId, weighInWeekday, backgroundColorValue);
 
   @override
   String toString() =>
-      'AppSettings($id, activeGoal="$activeGoalId", weekday=$weighInWeekday)';
+      'AppSettings($id, activeGoal="$activeGoalId", weekday=$weighInWeekday, '
+      'bg=0x${backgroundColorValue.toRadixString(16)})';
 }
 

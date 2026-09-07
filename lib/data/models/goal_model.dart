@@ -15,6 +15,7 @@ class GoalModel extends HiveObject {
   final List<String> contextTags;
   final int? fastHours;
   final int? windowHours;
+  final String? scheduledTime;
   final bool requiresNutritionTracking;
   final bool requiresWeightTracking;
   final bool archived;
@@ -36,6 +37,7 @@ class GoalModel extends HiveObject {
     required this.createdAt,
     this.fastHours,
     this.windowHours,
+    this.scheduledTime,
   });
 
   factory GoalModel.fromEntity(Goal e) => GoalModel(
@@ -48,6 +50,7 @@ class GoalModel extends HiveObject {
         contextTags: List<String>.unmodifiable(e.contextTags),
         fastHours: e.fasting?.fastHours,
         windowHours: e.fasting?.windowHours,
+        scheduledTime: e.scheduledTime,
         requiresNutritionTracking: e.requiresNutritionTracking,
         requiresWeightTracking: e.requiresWeightTracking,
         archived: e.archived,
@@ -70,6 +73,7 @@ class GoalModel extends HiveObject {
       targetValue: targetValue <= 0 ? 1 : targetValue,
       contextTags: contextTags,
       fasting: fasting,
+      scheduledTime: scheduledTime,
       requiresNutritionTracking: requiresNutritionTracking,
       requiresWeightTracking: requiresWeightTracking,
       archived: archived,
@@ -103,6 +107,7 @@ class GoalModelAdapter extends TypeAdapter<GoalModel> {
       contextTags: (fields[6] as List).cast<String>(),
       fastHours: fields[7] as int?,
       windowHours: fields[8] as int?,
+      scheduledTime: fields[14] as String?,
       requiresNutritionTracking: (fields[12] as bool?) ?? true,
       requiresWeightTracking: (fields[13] as bool?) ?? true,
       archived: fields[9] as bool,
@@ -114,7 +119,7 @@ class GoalModelAdapter extends TypeAdapter<GoalModel> {
   @override
   void write(BinaryWriter writer, GoalModel obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -142,6 +147,8 @@ class GoalModelAdapter extends TypeAdapter<GoalModel> {
       ..writeByte(12)
       ..writeBool(obj.requiresNutritionTracking)
       ..writeByte(13)
-      ..writeBool(obj.requiresWeightTracking);
+      ..writeBool(obj.requiresWeightTracking)
+      ..writeByte(14)
+      ..write(obj.scheduledTime);
   }
 }

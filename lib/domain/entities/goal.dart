@@ -18,6 +18,11 @@ class Goal {
 
   /// Config de ayuno (solo [GoalType.fasting]).
   final FastingConfig? fasting;
+/// Recordatorio opcional: hora diaria "HH:mm" (formato 24h; null = sin notificacion).
+  ///
+  /// Si se define, la app programa una notificacion local diaria a esa hora
+  /// para que no se olvide realizar la tarea (solo movil; en Web se ignora).
+  final String? scheduledTime;
 
   /// La meta requiere semáforo nutricional diario (dominio salud).
   ///
@@ -41,6 +46,7 @@ class Goal {
     required this.targetValue,
     this.contextTags = const [],
     this.fasting,
+    this.scheduledTime,
     this.requiresNutritionTracking = true,
     this.requiresWeightTracking = true,
     this.archived = false,
@@ -57,6 +63,7 @@ class Goal {
     int? targetValue,
     List<String>? contextTags,
     Object? fasting = _unset,
+    Object? scheduledTime = _unset,
     bool? requiresNutritionTracking,
     bool? requiresWeightTracking,
     bool? archived,
@@ -72,6 +79,9 @@ class Goal {
       targetValue: targetValue ?? this.targetValue,
       contextTags: contextTags ?? this.contextTags,
       fasting: identical(fasting, _unset) ? this.fasting : fasting as FastingConfig?,
+      scheduledTime: identical(scheduledTime, _unset)
+          ? this.scheduledTime
+          : scheduledTime as String?,
       requiresNutritionTracking:
           requiresNutritionTracking ?? this.requiresNutritionTracking,
       requiresWeightTracking:

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
+import '../../domain/entities/app_settings.dart';
 
 /// ThemeData oscuro premium de ConsisApp (Material 3).
 ///
 /// Solo usa claves estables de ThemeData para garantizar compatibilidad
 /// a lo largo del rango de versiones de Flutter soportado en `pubspec.yaml`.
-ThemeData buildDarkTheme() {
+ThemeData buildDarkTheme({int backgroundColorValue = AppSettings.defaultBgColor}) {
+  final background = Color(backgroundColorValue);
   const scheme = ColorScheme.dark(
     primary: AppColors.violet,
     onPrimary: Colors.white,
@@ -28,21 +30,21 @@ ThemeData buildDarkTheme() {
   );
 
   return base.copyWith(
-    scaffoldBackgroundColor: AppColors.bg,
+    scaffoldBackgroundColor: background,
 
     textTheme: base.textTheme.apply(
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     ),
 
-    appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.bg,
+    appBarTheme: AppBarTheme(
+      backgroundColor: background,
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
       systemOverlayStyle: SystemUiOverlayStyle.light,
-      titleTextStyle: TextStyle(
+      titleTextStyle: const TextStyle(
         color: AppColors.textPrimary,
         fontSize: 20,
         fontWeight: FontWeight.w700,

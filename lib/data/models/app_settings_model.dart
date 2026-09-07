@@ -11,11 +11,13 @@ class AppSettingsModel extends HiveObject {
   final String id;
   final String activeGoalId;
   final int weighInWeekday;
+  final int backgroundColorValue;
 
   AppSettingsModel({
     required this.id,
     required this.activeGoalId,
     required this.weighInWeekday,
+    required this.backgroundColorValue,
   });
 
   factory AppSettingsModel.defaults() {
@@ -24,6 +26,7 @@ class AppSettingsModel extends HiveObject {
       id: d.id,
       activeGoalId: d.activeGoalId,
       weighInWeekday: d.weighInWeekday,
+      backgroundColorValue: d.backgroundColorValue,
     );
   }
 
@@ -31,6 +34,7 @@ class AppSettingsModel extends HiveObject {
         id: e.id,
         activeGoalId: e.activeGoalId,
         weighInWeekday: e.weighInWeekday,
+        backgroundColorValue: e.backgroundColorValue,
       );
 
   /// Normaliza datos leídos de disco que pudieran estar fuera de rango
@@ -42,6 +46,7 @@ class AppSettingsModel extends HiveObject {
       id: id,
       activeGoalId: activeGoalId.trim(),
       weighInWeekday: weekday,
+      backgroundColorValue: backgroundColorValue,
     );
   }
 
@@ -66,18 +71,21 @@ class AppSettingsModelAdapter extends TypeAdapter<AppSettingsModel> {
       id: fields[0] as String,
       activeGoalId: fields[1] as String,
       weighInWeekday: fields[2] as int,
+      backgroundColorValue: (fields[3] as int?) ?? AppSettings.defaultBgColor,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettingsModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.activeGoalId)
       ..writeByte(2)
-      ..writeInt(obj.weighInWeekday);
+      ..writeInt(obj.weighInWeekday)..writeByte(3)..writeInt(obj.backgroundColorValue);
+
+      
   }
 }

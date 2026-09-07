@@ -122,6 +122,21 @@ class _SecuritySheetState extends ConsumerState<_SecuritySheet> {
             navigator.pop();
           },
         ),
+        if (ctrl.signedInRemote) ...[
+          const Divider(height: 28),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.logout_rounded, color: AppColors.coral),
+            title: const Text('Cerrar sesión'),
+            subtitle:
+                Text(ctrl.remoteEmail ?? '', style: text.bodySmall),
+            onTap: () {
+              final navigator = Navigator.of(context);
+              ref.read(authControllerProvider).signOutRemote();
+              navigator.pop();
+            },
+          ),
+        ],
       ],
     );
   }

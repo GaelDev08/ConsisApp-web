@@ -1,4 +1,5 @@
 import 'package:consis_app/core/constants/goal_defaults.dart';
+import 'package:consis_app/core/services/notification_service.dart';
 import 'package:consis_app/core/theme/app_colors.dart';
 import 'package:consis_app/core/utils/spanish_dates.dart';
 import 'package:consis_app/domain/entities/app_settings.dart';
@@ -69,6 +70,9 @@ class _GoalsSheetState extends ConsumerState<_GoalsSheet> {
 
   Widget _buildList(
       List<Goal> goals, String activeId, int weekday, TextTheme text) {
+    final bg =
+        ref.read(appSettingsStreamProvider).valueOrNull?.backgroundColorValue ??
+            AppSettings.defaultBgColor;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -125,6 +129,44 @@ class _GoalsSheetState extends ConsumerState<_GoalsSheet> {
                 .save(settings.copyWith(weighInWeekday: sel.first));
           },
         ),
+        const Divider(height: 26),
+        Text('Color de fondo',
+            style: text.labelLarge?.copyWith(
+                color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final p in AppColors.backgroundPresets)
+              GestureDetector(
+                onTap: () async {
+                  final s = ref.read(appSettingsStreamProvider).valueOrNull;
+                  if (s == null) return;
+                  await ref.read(appSettingsRepositoryProvider).save(
+                    s.copyWith(backgroundColorValue: p.value),
+                  );
+                },
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Color(p.value),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: p.value == bg ? AppColors.violet : AppColors.border,
+                      width: p.value == bg ? 3 : 1,
+                    ),
+                  ),
+                  child: p.value == bg
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: Colors.white, size: 20)
+                      : null,
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 18),
         FilledButton.icon(
           onPressed: () => setState(() => _view = _GoalsView.create),
@@ -158,6 +200,7 @@ class _CreateGoalFormState extends ConsumerState<_CreateGoalForm> {
   FastingPreset _fastPreset = kFastingPresets[1]; // 16/8 por defecto
   bool _customHealthTracking = true; // solo visible en metas CUSTOM
   bool _saving = false;
+  TimeOfDay? _scheduledTime;
 
   @override
   void dispose() {
@@ -181,6 +224,14 @@ class _CreateGoalFormState extends ConsumerState<_CreateGoalForm> {
         _target = 60;
       }
     });
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _scheduledTime ?? const TimeOfDay(hour: 8, minute: 0),
+    );
+    if (picked != null) setState(() => _scheduledTime = picked);
   }
 
   Future<void> _save() async {
@@ -212,11 +263,21 @@ class _CreateGoalFormState extends ConsumerState<_CreateGoalForm> {
           : null,
       requiresNutritionTracking: healthTracking,
       requiresWeightTracking: healthTracking,
+      scheduledTime: _scheduledTime == null
+          ? null
+          : '${_scheduledTime!.hour.toString().padLeft(2, '0')}:'
+              '${_scheduledTime!.minute.toString().padLeft(2, '0')}',
       sortOrder: widget.existingCount,
       createdAt: now,
     );
 
     await ref.read(goalRepositoryProvider).save(goal);
+    // Recordatorio diario (solo móvil). Si la meta no tiene horario, no se programa.
+    await NotificationService.scheduleGoalReminder(
+      goalId: goal.id,
+      title: goal.title,
+      time: goal.scheduledTime ?? '',
+    );
 
     // Sin meta activa previa ⇒ esta queda en foco automáticamente.
     final settings = ref.read(appSettingsStreamProvider).valueOrNull;
@@ -374,6 +435,49 @@ class _CreateGoalFormState extends ConsumerState<_CreateGoalForm> {
             ],
           ),
         ],
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceHigh,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SwitchListTile(
+                value: _scheduledTime != null,
+                onChanged: (v) => setState(() =>
+                    _scheduledTime = v
+                        ? const TimeOfDay(hour: 8, minute: 0)
+                        : null),
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.notifications_rounded,
+                    color: AppColors.violet),
+                title: const Text('Recordatorio diario',
+                    style: TextStyle(fontSize: 14)),
+                subtitle: Text(
+                    _scheduledTime == null
+                        ? 'Recibe una notificación para no olvidarlo'
+                        : 'Todos los días a las ${_scheduledTime!.format(context)}',
+                    style: const TextStyle(fontSize: 11)),
+              ),
+              if (_scheduledTime != null)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  leading: const Icon(Icons.schedule_rounded,
+                      color: AppColors.cyan),
+                  title: const Text('Cambiar hora',
+                      style: TextStyle(fontSize: 13)),
+                  trailing: const Icon(Icons.chevron_right_rounded,
+                      color: AppColors.textMuted),
+                  onTap: _pickTime,
+                ),
+            ],
+          ),
+        ),
         const SizedBox(height: 20),
         FilledButton(
           onPressed: _save,
