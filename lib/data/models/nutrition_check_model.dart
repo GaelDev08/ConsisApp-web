@@ -57,8 +57,8 @@ class NutritionCheckModelAdapter extends TypeAdapter<NutritionCheckModel> {
     };
     return NutritionCheckModel(
       id: fields[0] as String,
-      day: fields[1] as DateTime,
-      levelIndex: fields[2] as int,
+      day: fields[1] as DateTime? ?? DateTime.now(),
+      levelIndex: (fields[2] as int?) ?? 0,
       note: fields[3] as String?,
     );
   }

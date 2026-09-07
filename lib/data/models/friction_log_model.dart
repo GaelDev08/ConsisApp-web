@@ -63,12 +63,12 @@ class FrictionLogModelAdapter extends TypeAdapter<FrictionLogModel> {
     };
     return FrictionLogModel(
       id: fields[0] as String,
-      goalId: fields[1] as String,
-      day: fields[2] as DateTime,
+      goalId: fields[1] as String? ?? '',
+      day: fields[2] as DateTime? ?? DateTime.now(),
       tag: fields[3] as String?,
       customLabel: fields[4] as String?,
       note: fields[5] as String?,
-      createdAt: fields[6] as DateTime,
+      createdAt: fields[6] as DateTime? ?? DateTime.now(),
     );
   }
 

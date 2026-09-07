@@ -124,16 +124,16 @@ class SessionEntryModelAdapter extends TypeAdapter<SessionEntryModel> {
     };
     return SessionEntryModel(
       id: fields[0] as String,
-      goalId: fields[1] as String,
-      day: fields[2] as DateTime,
-      durationMinutes: fields[3] as int,
+      goalId: fields[1] as String? ?? '',
+      day: fields[2] as DateTime? ?? DateTime.now(),
+      durationMinutes: (fields[3] as int?) ?? 0,
       quantity: (fields[4] as num?)?.toDouble(),
-      activities: (fields[5] as List).cast<ActivityEntryModel>(),
-      tags: (fields[6] as List).cast<String>(),
+      activities: (fields[5] as List?)?.cast<ActivityEntryModel>() ?? const [],
+      tags: (fields[6] as List?)?.cast<String>() ?? const [],
       fastingStartAt: fields[7] as DateTime?,
       fastingEndAt: fields[8] as DateTime?,
       note: fields[9] as String?,
-      createdAt: fields[10] as DateTime,
+      createdAt: fields[10] as DateTime? ?? DateTime.now(),
     );
   }
 

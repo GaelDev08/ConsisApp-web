@@ -84,8 +84,8 @@ class AppSettingsModelAdapter extends TypeAdapter<AppSettingsModel> {
       ..writeByte(1)
       ..write(obj.activeGoalId)
       ..writeByte(2)
-      ..writeInt(obj.weighInWeekday)..writeByte(3)..writeInt(obj.backgroundColorValue);
-
-      
+      ..writeInt(obj.weighInWeekday)
+      ..writeByte(3)
+      ..writeInt(obj.backgroundColorValue);
   }
 }

@@ -49,8 +49,8 @@ class WeightRecordModelAdapter extends TypeAdapter<WeightRecordModel> {
     };
     return WeightRecordModel(
       id: fields[0] as String,
-      date: fields[1] as DateTime,
-      weightKg: (fields[2] as num).toDouble(),
+      date: fields[1] as DateTime? ?? DateTime.now(),
+      weightKg: (fields[2] as num?)?.toDouble() ?? 0.0,
       source: (fields[3] as String?) ?? 'manual',
     );
   }

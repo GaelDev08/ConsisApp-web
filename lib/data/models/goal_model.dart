@@ -103,16 +103,16 @@ class GoalModelAdapter extends TypeAdapter<GoalModel> {
       title: fields[2] as String,
       frequencyIndex: fields[3] as int,
       unitIndex: fields[4] as int,
-      targetValue: fields[5] as int,
-      contextTags: (fields[6] as List).cast<String>(),
+      targetValue: (fields[5] as int?) ?? 1,
+      contextTags: (fields[6] as List?)?.cast<String>() ?? const [],
       fastHours: fields[7] as int?,
       windowHours: fields[8] as int?,
       scheduledTime: fields[14] as String?,
       requiresNutritionTracking: (fields[12] as bool?) ?? true,
       requiresWeightTracking: (fields[13] as bool?) ?? true,
-      archived: fields[9] as bool,
-      sortOrder: fields[10] as int,
-      createdAt: fields[11] as DateTime,
+      archived: fields[9] as bool? ?? false,
+      sortOrder: (fields[10] as int?) ?? 0,
+      createdAt: fields[11] as DateTime? ?? DateTime.now(),
     );
   }
 
