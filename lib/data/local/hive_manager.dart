@@ -30,21 +30,15 @@ abstract final class HiveManager {
 
     final cipher = HiveAesCipher(aesKey);
 
-    await Future.wait(<Future<void>>[
-      Hive.openBox<GoalModel>(BoxNames.goals, encryptionCipher: cipher),
-      Hive.openBox<SessionEntryModel>(BoxNames.sessions,
-          encryptionCipher: cipher),
-      Hive.openBox<WeightRecordModel>(BoxNames.weights,
-          encryptionCipher: cipher),
-      Hive.openBox<FrictionLogModel>(BoxNames.frictions,
-          encryptionCipher: cipher),
-      Hive.openBox<NutritionCheckModel>(BoxNames.nutrition,
-          encryptionCipher: cipher),
-      Hive.openBox<AppSettingsModel>(BoxNames.settings,
-          encryptionCipher: cipher),
-      Hive.openBox<UserProfileModel>(BoxNames.profile,
-          encryptionCipher: cipher),
-    ]);
+    // Abrir cada box individualmente con recuperación automática.
+    // Si un box tiene datos corruptos (typeId desconocido), se borra y se recrea.
+    await _openBoxSafe<GoalModel>(BoxNames.goals, cipher);
+    await _openBoxSafe<SessionEntryModel>(BoxNames.sessions, cipher);
+    await _openBoxSafe<WeightRecordModel>(BoxNames.weights, cipher);
+    await _openBoxSafe<FrictionLogModel>(BoxNames.frictions, cipher);
+    await _openBoxSafe<NutritionCheckModel>(BoxNames.nutrition, cipher);
+    await _openBoxSafe<AppSettingsModel>(BoxNames.settings, cipher);
+    await _openBoxSafe<UserProfileModel>(BoxNames.profile, cipher);
 
     // Semilla de ajustes por defecto (día de pesaje = lunes, meta 200 min).
     final settings = Hive.box<AppSettingsModel>(BoxNames.settings);
@@ -56,6 +50,25 @@ abstract final class HiveManager {
     }
 
     _ready = true;
+  }
+
+  /// Abre un box de forma segura: si falla por datos corruptos o typeId
+  /// desconocido, borra el box del disco y lo recrea limpio.
+  static Future<void> _openBoxSafe<T>(
+    String name,
+    HiveAesCipher cipher,
+  ) async {
+    try {
+      await Hive.openBox<T>(name, encryptionCipher: cipher);
+    } catch (e) {
+      // Datos corruptos o typeId desconocido: borrar y recrear.
+      try {
+        await Hive.deleteBoxFromDisk(name);
+      } catch (_) {
+        // Ignorar error al borrar.
+      }
+      await Hive.openBox<T>(name, encryptionCipher: cipher);
+    }
   }
 
   static void _registerAdapters() {
