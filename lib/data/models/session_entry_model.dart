@@ -32,8 +32,8 @@ class ActivityEntryModelAdapter extends TypeAdapter<ActivityEntryModel> {
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return ActivityEntryModel(
-      name: fields[0] as String,
-      minutes: fields[1] as int,
+      name: fields[0] as String? ?? '',
+      minutes: (fields[1] as int?) ?? 0,
     );
   }
 
@@ -123,7 +123,7 @@ class SessionEntryModelAdapter extends TypeAdapter<SessionEntryModel> {
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return SessionEntryModel(
-      id: fields[0] as String,
+      id: fields[0] as String? ?? '',
       goalId: fields[1] as String? ?? '',
       day: fields[2] as DateTime? ?? DateTime.now(),
       durationMinutes: (fields[3] as int?) ?? 0,

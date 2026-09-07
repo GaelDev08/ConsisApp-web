@@ -68,9 +68,9 @@ class AppSettingsModelAdapter extends TypeAdapter<AppSettingsModel> {
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AppSettingsModel(
-      id: fields[0] as String,
-      activeGoalId: fields[1] as String,
-      weighInWeekday: fields[2] as int,
+      id: fields[0] as String? ?? '',
+      activeGoalId: fields[1] as String? ?? '',
+      weighInWeekday: (fields[2] as int?) ?? 1,
       backgroundColorValue: (fields[3] as int?) ?? AppSettings.defaultBgColor,
     );
   }

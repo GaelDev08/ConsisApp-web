@@ -98,11 +98,11 @@ class GoalModelAdapter extends TypeAdapter<GoalModel> {
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return GoalModel(
-      id: fields[0] as String,
-      typeIndex: fields[1] as int,
-      title: fields[2] as String,
-      frequencyIndex: fields[3] as int,
-      unitIndex: fields[4] as int,
+      id: fields[0] as String? ?? '',
+      typeIndex: (fields[1] as int?) ?? 0,
+      title: fields[2] as String? ?? '',
+      frequencyIndex: (fields[3] as int?) ?? 0,
+      unitIndex: (fields[4] as int?) ?? 0,
       targetValue: (fields[5] as int?) ?? 1,
       contextTags: (fields[6] as List?)?.cast<String>() ?? const [],
       fastHours: fields[7] as int?,

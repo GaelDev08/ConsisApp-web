@@ -56,7 +56,7 @@ class NutritionCheckModelAdapter extends TypeAdapter<NutritionCheckModel> {
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return NutritionCheckModel(
-      id: fields[0] as String,
+      id: fields[0] as String? ?? '',
       day: fields[1] as DateTime? ?? DateTime.now(),
       levelIndex: (fields[2] as int?) ?? 0,
       note: fields[3] as String?,

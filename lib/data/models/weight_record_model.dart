@@ -48,7 +48,7 @@ class WeightRecordModelAdapter extends TypeAdapter<WeightRecordModel> {
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return WeightRecordModel(
-      id: fields[0] as String,
+      id: fields[0] as String? ?? '',
       date: fields[1] as DateTime? ?? DateTime.now(),
       weightKg: (fields[2] as num?)?.toDouble() ?? 0.0,
       source: (fields[3] as String?) ?? 'manual',

@@ -62,7 +62,7 @@ class FrictionLogModelAdapter extends TypeAdapter<FrictionLogModel> {
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return FrictionLogModel(
-      id: fields[0] as String,
+      id: fields[0] as String? ?? '',
       goalId: fields[1] as String? ?? '',
       day: fields[2] as DateTime? ?? DateTime.now(),
       tag: fields[3] as String?,
