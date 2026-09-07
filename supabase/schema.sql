@@ -180,4 +180,16 @@ create policy "frictions_insert" on public.frictions
 create policy "frictions_update" on public.frictions
   for update using (auth.uid() = user_id);
 create policy "frictions_delete" on public.frictions
+
+-- ============================================================
+--  MIGRACIÓN: horario de recordatorio en metas
+--  Ejecutar esto DESPUÉS del esquema principal si la DB ya existe
+-- ============================================================
+
+-- Agregar columna de horario a la tabla goals (formato "HH:mm" 24h, null = sin horario)
+alter table public.goals
+  add column if not exists scheduled_time text;
+
+-- Comentario para documentación
+comment on column public.goals.scheduled_time is 'Hora diaria de recordatorio en formato HH:mm (24h). Null = sin notificación.';
   for delete using (auth.uid() = user_id);

@@ -5,6 +5,8 @@ import 'package:consis_app/data/repositories/hive_nutrition_check_repository.dar
 import 'package:consis_app/data/repositories/hive_session_entry_repository.dart';
 import 'package:consis_app/data/repositories/hive_user_profile_repository.dart';
 import 'package:consis_app/data/repositories/hive_weight_record_repository.dart';
+import 'package:consis_app/data/repositories/supabase_goal_repository.dart';
+import 'package:consis_app/data/repositories/sync_goal_repository.dart';
 import 'package:consis_app/domain/repositories/app_settings_repository.dart';
 import 'package:consis_app/domain/repositories/friction_log_repository.dart';
 import 'package:consis_app/domain/repositories/goal_repository.dart';
@@ -18,9 +20,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Cambiar la implementación aquí basta para swap completo de storage.
 
-final goalRepositoryProvider = Provider<GoalRepository>(
-  (_) => HiveGoalRepository(),
-);
+/// Repositorio de metas: Hive local + sincronización con Supabase.
+/// Offline-first: funciona sin internet y sincroniza cuando hay sesión activa.
+final goalRepositoryProvider = Provider<GoalRepository>((ref) {
+  return SyncGoalRepository(
+    local: HiveGoalRepository(),
+    remote: SupabaseGoalRepository(),
+    ref: ref,
+  );
+});
 
 final sessionEntryRepositoryProvider = Provider<SessionEntryRepository>(
   (_) => HiveSessionEntryRepository(),
