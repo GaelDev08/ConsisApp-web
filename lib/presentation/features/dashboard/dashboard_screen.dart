@@ -15,6 +15,7 @@ import 'package:consis_app/presentation/features/dashboard/widgets/fasting_card.
 import 'package:consis_app/presentation/providers/dashboard_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Dashboard principal de ConsisApp (Fase 2).
 ///
@@ -81,7 +82,47 @@ class _DashboardContent extends ConsumerWidget {
           const SizedBox(height: 16),
           const FrictionNudgeCard(),
         ],
+        const SizedBox(height: 28),
+        const _DevFooter(),
       ],
+    );
+  }
+}
+
+class _DevFooter extends StatelessWidget {
+  const _DevFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => launchUrl(
+        Uri.parse('https://github.com/GaelDev08'),
+        mode: LaunchMode.externalApplication,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppColors.textMuted),
+            children: const [
+              TextSpan(text: 'Desarrollado por '),
+              TextSpan(
+                text: 'GaelDev08',
+                style: TextStyle(
+                  color: AppColors.cyan,
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.underline,
+                  decorationColor: AppColors.cyan,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -9,9 +9,20 @@ create extension if not exists pgcrypto;
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   name text not null default '',
-  age int,
+  birthdate date,
   country text,
   address text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- APP SETTINGS
+create table if not exists public.app_settings (
+  id text primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  active_goal_id text,
+  weigh_in_weekday int not null default 1,
+  theme_mode text not null default 'system',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -31,6 +42,7 @@ create table if not exists public.goals (
   requires_weight boolean not null default true,
   archived boolean not null default false,
   sort_order int not null default 0,
+  scheduled_time text,
   created_at timestamptz not null default now()
 );
 
@@ -111,6 +123,7 @@ create trigger on_auth_user_created
 --  RLS: cada usuario solo ve/edita SUS propias filas
 -- ============================================================
 alter table public.profiles enable row level security;
+alter table public.app_settings enable row level security;
 alter table public.goals enable row level security;
 alter table public.sessions enable row level security;
 alter table public.weights enable row level security;
@@ -126,6 +139,17 @@ create policy "profiles_upsert" on public.profiles
   for insert with check (auth.uid() = id);
 create policy "profiles_update" on public.profiles
   for update using (auth.uid() = id);
+
+-- APP SETTINGS
+drop policy if exists "app_settings_select" on public.app_settings;
+create policy "app_settings_select" on public.app_settings
+  for select using (auth.uid() = user_id);
+create policy "app_settings_insert" on public.app_settings
+  for insert with check (auth.uid() = user_id);
+create policy "app_settings_update" on public.app_settings
+  for update using (auth.uid() = user_id);
+create policy "app_settings_delete" on public.app_settings
+  for delete using (auth.uid() = user_id);
 
 -- GOALS
 drop policy if exists "goals_select" on public.goals;
@@ -180,16 +204,4 @@ create policy "frictions_insert" on public.frictions
 create policy "frictions_update" on public.frictions
   for update using (auth.uid() = user_id);
 create policy "frictions_delete" on public.frictions
-
--- ============================================================
---  MIGRACIÓN: horario de recordatorio en metas
---  Ejecutar esto DESPUÉS del esquema principal si la DB ya existe
--- ============================================================
-
--- Agregar columna de horario a la tabla goals (formato "HH:mm" 24h, null = sin horario)
-alter table public.goals
-  add column if not exists scheduled_time text;
-
--- Comentario para documentación
-comment on column public.goals.scheduled_time is 'Hora diaria de recordatorio en formato HH:mm (24h). Null = sin notificación.';
   for delete using (auth.uid() = user_id);

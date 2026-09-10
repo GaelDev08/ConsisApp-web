@@ -165,6 +165,24 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Envía correo de recuperación de contraseña.
+  /// Devuelve null si se envió OK, o mensaje de error legible.
+  Future<String?> resetPasswordRemote({
+    required String email,
+    String? redirectTo,
+  }) async {
+    final remote = _remote;
+    if (remote == null || !remote.enabled) {
+      return 'La cuenta no está configurada en esta compilación.';
+    }
+    try {
+      await remote.resetPassword(email: email, redirectTo: redirectTo);
+      return null;
+    } catch (e) {
+      return _friendlyAuthError(e);
+    }
+  }
+
   Future<void> _continueAfterRemoteAuth() async {
     final hasPin = await _store.hasPinConfigured();
     _biometricEnabled = await _store.isBiometricEnabled();

@@ -9,8 +9,6 @@ import 'package:consis_app/presentation/providers/repository_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const List<int> _presets = [15, 30, 45, 60];
-
 /// Modal "2 taps": primer tap elige preset, segundo confirma.
 /// El stepper permite ajuste fino en pasos de 5 minutos.
 Future<void> showQuickLogSheet(
@@ -34,10 +32,11 @@ class _QuickLogSheet extends ConsumerStatefulWidget {
 }
 
 class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
-  int _minutes = 30;
-  int? _selectedPreset;
+  String _minutesStr = '30';
   DateTime _selectedDate = DateTime.now();
   final Set<String> _selectedTags = {};
+
+  int get _minutes => int.tryParse(_minutesStr) ?? 0;
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -55,23 +54,33 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     }
   }
 
-  void _selectPreset(int value) {
+  void _onKeyPress(String key) {
     setState(() {
-      _minutes = value;
-      _selectedPreset = value;
-    });
-  }
-
-  void _adjust(int delta) {
-    setState(() {
-      _minutes = (_minutes + delta).clamp(1, 600);
-      _selectedPreset = _presets.contains(_minutes) ? _minutes : null;
+      if (key == 'backspace') {
+        if (_minutesStr.isNotEmpty) {
+          _minutesStr = _minutesStr.substring(0, _minutesStr.length - 1);
+        }
+      } else {
+        if (_minutesStr == '0') {
+          _minutesStr = key;
+        } else if (_minutesStr.length < 3) { // max 999 minutes
+          _minutesStr += key;
+        }
+      }
+      if (_minutesStr.isEmpty) _minutesStr = '0';
     });
   }
 
   Future<void> _save() async {
     final goalId = ref.read(activeGoalIdProvider);
     if (goalId.isEmpty) return;
+
+    if (_minutes <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingresa al menos 1 minuto.')),
+      );
+      return;
+    }
 
     final repo = ref.read(sessionEntryRepositoryProvider);
     final messenger = ScaffoldMessenger.of(context);
@@ -141,23 +150,35 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
             ),
             const SizedBox(height: 16),
           ],
-          Row(
-            children: [
-              for (final preset in _presets) ...[
-                Expanded(
-                  child: _PresetButton(
-                    value: preset,
-                    selected: _selectedPreset == preset,
-                    onTap: () => _selectPreset(preset),
+          
+          // Display
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  _minutesStr,
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1.5,
                   ),
                 ),
-                if (preset != _presets.last) const SizedBox(width: 8),
+                const Text(
+                  'minutos',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ],
-            ],
+            ),
           ),
-          const SizedBox(height: 20),
-          _Stepper(minutes: _minutes, onAdjust: _adjust),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
+          
+          // Numpad
+          _Numpad(onKeyPress: _onKeyPress),
+          
+          const SizedBox(height: 24),
           FilledButton(
             onPressed: _save,
             style: FilledButton.styleFrom(
@@ -214,109 +235,72 @@ class _TagChip extends StatelessWidget {
   }
 }
 
-class _PresetButton extends StatelessWidget {
-  final int value;
-  final bool selected;
-  final VoidCallback onTap;
+class _Numpad extends StatelessWidget {
+  final ValueChanged<String> onKeyPress;
 
-  const _PresetButton({
-    required this.value,
-    required this.selected,
-    required this.onTap,
-  });
+  const _Numpad({required this.onKeyPress});
 
   @override
   Widget build(BuildContext context) {
-    final accent = selected ? AppColors.violet : AppColors.textPrimary;
+    return Column(
+      children: [
+        _buildRow(['1', '2', '3']),
+        const SizedBox(height: 12),
+        _buildRow(['4', '5', '6']),
+        const SizedBox(height: 12),
+        _buildRow(['7', '8', '9']),
+        const SizedBox(height: 12),
+        _buildRow(['', '0', 'backspace']),
+      ],
+    );
+  }
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        height: 58,
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.violet.withValues(alpha: 0.14)
-              : AppColors.surfaceHigh,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected
-                ? AppColors.violet.withValues(alpha: 0.7)
-                : AppColors.border,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('+$value',
-                style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w800, color: accent)),
-            const Text('min',
-                style:
-                    TextStyle(fontSize: 10, color: AppColors.textMuted)),
-          ],
-        ),
-      ),
+  Widget _buildRow(List<String> keys) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: keys.map((k) {
+        if (k.isEmpty) {
+          return const SizedBox(width: 70, height: 60);
+        }
+        return _NumpadButton(
+          keyString: k,
+          onTap: () => onKeyPress(k),
+        );
+      }).toList(),
     );
   }
 }
 
-class _Stepper extends StatelessWidget {
-  final int minutes;
-  final ValueChanged<int> onAdjust;
-
-  const _Stepper({required this.minutes, required this.onAdjust});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceHigh,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _StepButton(icon: Icons.remove_rounded, onTap: () => onAdjust(-5)),
-          Column(
-            children: [
-              Text('$minutes',
-                  style: text.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800, letterSpacing: -1)),
-              Text('minutos',
-                  style: text.labelSmall?.copyWith(color: AppColors.textMuted)),
-            ],
-          ),
-          _StepButton(icon: Icons.add_rounded, onTap: () => onAdjust(5)),
-        ],
-      ),
-    );
-  }
-}
-
-class _StepButton extends StatelessWidget {
-  final IconData icon;
+class _NumpadButton extends StatelessWidget {
+  final String keyString;
   final VoidCallback onTap;
 
-  const _StepButton({required this.icon, required this.onTap});
+  const _NumpadButton({required this.keyString, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final isBackspace = keyString == 'backspace';
+
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 46,
-        height: 46,
+        width: 70,
+        height: 60,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.border),
+          color: AppColors.surfaceHigh,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(icon, size: 22, color: AppColors.textPrimary),
+        child: isBackspace
+            ? const Icon(Icons.backspace_rounded, color: AppColors.textSecondary)
+            : Text(
+                keyString,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:hive_ce/hive.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 /// Helper reactivo genérico para cajas Hive.

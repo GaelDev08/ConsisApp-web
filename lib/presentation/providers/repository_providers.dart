@@ -7,6 +7,8 @@ import 'package:consis_app/data/repositories/hive_user_profile_repository.dart';
 import 'package:consis_app/data/repositories/hive_weight_record_repository.dart';
 import 'package:consis_app/data/repositories/supabase_goal_repository.dart';
 import 'package:consis_app/data/repositories/sync_goal_repository.dart';
+import 'package:consis_app/data/repositories/supabase_repositories.dart';
+import 'package:consis_app/data/repositories/sync_repositories.dart';
 import 'package:consis_app/domain/repositories/app_settings_repository.dart';
 import 'package:consis_app/domain/repositories/friction_log_repository.dart';
 import 'package:consis_app/domain/repositories/goal_repository.dart';
@@ -16,12 +18,6 @@ import 'package:consis_app/domain/repositories/user_profile_repository.dart';
 import 'package:consis_app/domain/repositories/weight_record_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Bindings de repositorios (Data ← inyección hacia Presentation).
-///
-/// Cambiar la implementación aquí basta para swap completo de storage.
-
-/// Repositorio de metas: Hive local + sincronización con Supabase.
-/// Offline-first: funciona sin internet y sincroniza cuando hay sesión activa.
 final goalRepositoryProvider = Provider<GoalRepository>((ref) {
   return SyncGoalRepository(
     local: HiveGoalRepository(),
@@ -30,26 +26,38 @@ final goalRepositoryProvider = Provider<GoalRepository>((ref) {
   );
 });
 
-final sessionEntryRepositoryProvider = Provider<SessionEntryRepository>(
-  (_) => HiveSessionEntryRepository(),
-);
+final sessionEntryRepositoryProvider = Provider<SessionEntryRepository>((ref) {
+  return SyncSessionEntryRepository(
+    local: HiveSessionEntryRepository(),
+    remote: SupabaseSessionEntryRepository(),
+    ref: ref,
+  );
+});
 
-final weightRecordRepositoryProvider = Provider<WeightRecordRepository>(
-  (_) => HiveWeightRecordRepository(),
-);
+final weightRecordRepositoryProvider = Provider<WeightRecordRepository>((ref) {
+  return HiveWeightRecordRepository();
+});
 
-final frictionLogRepositoryProvider = Provider<FrictionLogRepository>(
-  (_) => HiveFrictionLogRepository(),
-);
+final frictionLogRepositoryProvider = Provider<FrictionLogRepository>((ref) {
+  return HiveFrictionLogRepository();
+});
 
-final nutritionCheckRepositoryProvider = Provider<NutritionCheckRepository>(
-  (_) => HiveNutritionCheckRepository(),
-);
+final nutritionCheckRepositoryProvider = Provider<NutritionCheckRepository>((ref) {
+  return HiveNutritionCheckRepository();
+});
 
-final appSettingsRepositoryProvider = Provider<AppSettingsRepository>(
-  (_) => HiveAppSettingsRepository(),
-);
+final appSettingsRepositoryProvider = Provider<AppSettingsRepository>((ref) {
+  return SyncAppSettingsRepository(
+    local: HiveAppSettingsRepository(),
+    remote: SupabaseAppSettingsRepository(),
+    ref: ref,
+  );
+});
 
-final userProfileRepositoryProvider = Provider<UserProfileRepository>(
-  (_) => HiveUserProfileRepository(),
-);
+final userProfileRepositoryProvider = Provider<UserProfileRepository>((ref) {
+  return SyncUserProfileRepository(
+    local: HiveUserProfileRepository(),
+    remote: SupabaseUserProfileRepository(),
+    ref: ref,
+  );
+});

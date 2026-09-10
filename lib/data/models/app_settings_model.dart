@@ -3,6 +3,8 @@ import 'package:hive_ce/hive.dart';
 import 'package:consis_app/domain/entities/app_settings.dart';
 import '../local/hive_registry.dart';
 
+import 'package:flutter/material.dart' show ThemeMode;
+
 /// Modelo persistible de [AppSettings] (caja singleton).
 ///
 /// Guarda la meta EN FOCO del carrusel ([activeGoalId]) y el **día de
@@ -11,13 +13,13 @@ class AppSettingsModel extends HiveObject {
   final String id;
   final String activeGoalId;
   final int weighInWeekday;
-  final int backgroundColorValue;
+  final String themeMode;
 
   AppSettingsModel({
     required this.id,
     required this.activeGoalId,
     required this.weighInWeekday,
-    required this.backgroundColorValue,
+    required this.themeMode,
   });
 
   factory AppSettingsModel.defaults() {
@@ -26,7 +28,7 @@ class AppSettingsModel extends HiveObject {
       id: d.id,
       activeGoalId: d.activeGoalId,
       weighInWeekday: d.weighInWeekday,
-      backgroundColorValue: d.backgroundColorValue,
+      themeMode: d.themeMode.name,
     );
   }
 
@@ -34,7 +36,7 @@ class AppSettingsModel extends HiveObject {
         id: e.id,
         activeGoalId: e.activeGoalId,
         weighInWeekday: e.weighInWeekday,
-        backgroundColorValue: e.backgroundColorValue,
+        themeMode: e.themeMode.name,
       );
 
   /// Normaliza datos leídos de disco que pudieran estar fuera de rango
@@ -42,18 +44,31 @@ class AppSettingsModel extends HiveObject {
   AppSettings toEntity() {
     final weekday =
         weighInWeekday.clamp(AppSettings.minWeekday, AppSettings.maxWeekday);
+    
+    ThemeMode tm;
+    switch (themeMode) {
+      case 'light':
+        tm = ThemeMode.light;
+        break;
+      case 'dark':
+        tm = ThemeMode.dark;
+        break;
+      default:
+        tm = ThemeMode.system;
+    }
+
     return AppSettings(
       id: id,
       activeGoalId: activeGoalId.trim(),
       weighInWeekday: weekday,
-      backgroundColorValue: backgroundColorValue,
+      themeMode: tm,
     );
   }
 
   @override
   String toString() =>
       'AppSettingsModel($id, activeGoal="$activeGoalId", '
-      'weekday=$weighInWeekday)';
+      'weekday=$weighInWeekday, theme=$themeMode)';
 }
 
 /// TypeAdapter manual (sin build_runner).
@@ -71,7 +86,7 @@ class AppSettingsModelAdapter extends TypeAdapter<AppSettingsModel> {
       id: fields[0] as String? ?? '',
       activeGoalId: fields[1] as String? ?? '',
       weighInWeekday: (fields[2] as int?) ?? 1,
-      backgroundColorValue: (fields[3] as int?) ?? AppSettings.defaultBgColor,
+      themeMode: (fields[3] as String?) ?? 'system',
     );
   }
 
@@ -86,6 +101,6 @@ class AppSettingsModelAdapter extends TypeAdapter<AppSettingsModel> {
       ..writeByte(2)
       ..writeInt(obj.weighInWeekday)
       ..writeByte(3)
-      ..writeInt(obj.backgroundColorValue);
+      ..write(obj.themeMode);
   }
 }

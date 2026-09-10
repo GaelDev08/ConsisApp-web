@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../domain/entities/app_settings.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../providers/dashboard_providers.dart';
 import '../security/auth_gate.dart';
@@ -15,14 +14,15 @@ class ConsisApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsStreamProvider).valueOrNull;
+    final themeMode = settings?.themeMode ?? ThemeMode.system;
+
     return MaterialApp(
       title: 'ConsisApp',
       debugShowCheckedModeBanner: false,
-      theme: buildDarkTheme(
-        backgroundColorValue:
-            ref.watch(appSettingsStreamProvider).valueOrNull?.backgroundColorValue ??
-                AppSettings.defaultBgColor,
-      ),
+      theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: themeMode,
       home: const AuthGate(child: DashboardScreen()),
     );
   }

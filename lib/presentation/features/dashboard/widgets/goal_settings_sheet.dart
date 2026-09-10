@@ -44,6 +44,116 @@ class _GoalsSheetState extends ConsumerState<_GoalsSheet> {
         .save(settings.copyWith(activeGoalId: goalId));
   }
 
+  Future<void> _editGoal(Goal goal) async {
+    final controller = TextEditingController(text: goal.title);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Editar meta',
+            style: TextStyle(color: AppColors.textPrimary)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: const InputDecoration(
+            hintText: 'Nombre de la meta',
+            hintStyle: TextStyle(color: AppColors.textMuted),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.violet),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && result != goal.title) {
+      final updated = goal.copyWith(title: result);
+      await ref.read(goalRepositoryProvider).save(updated);
+
+      // Si era la meta activa, mantenerla activa tras la edición
+      final settings = ref.read(appSettingsStreamProvider).valueOrNull;
+      if (settings?.activeGoalId == goal.id) {
+        await ref
+            .read(appSettingsRepositoryProvider)
+            .save(settings!.copyWith(activeGoalId: goal.id));
+      }
+    }
+  }
+
+  Future<void> _deleteGoal(Goal goal) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Eliminar meta',
+            style: TextStyle(color: AppColors.textPrimary)),
+        content: Text(
+          '¿Seguro que quieres eliminar "${goal.title}"?\n\nEsta acción no se puede deshacer.',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(goalRepositoryProvider).deleteById(goal.id);
+
+      // Si era la meta activa, limpiar la selección
+      final settings = ref.read(appSettingsStreamProvider).valueOrNull;
+      if (settings?.activeGoalId == goal.id) {
+        final goals = ref.read(goalsStreamProvider).valueOrNull ?? [];
+        final nextActive = goals.where((g) => g.id != goal.id && !g.archived).firstOrNull;
+        await ref
+            .read(appSettingsRepositoryProvider)
+            .save(settings!.copyWith(activeGoalId: nextActive?.id ?? ''));
+      }
+    }
+  }
+
+  Future<void> _toggleArchive(Goal goal) async {
+    final updated = goal.copyWith(archived: !goal.archived);
+    await ref.read(goalRepositoryProvider).save(updated);
+
+    // Si archivamos la meta activa, mover el foco a otra meta
+    if (goal.archived == false) {
+      final settings = ref.read(appSettingsStreamProvider).valueOrNull;
+      if (settings?.activeGoalId == goal.id) {
+        final goals = ref.read(goalsStreamProvider).valueOrNull ?? [];
+        final nextActive =
+            goals.where((g) => g.id != goal.id && !g.archived).firstOrNull;
+        await ref
+            .read(appSettingsRepositoryProvider)
+            .save(settings!.copyWith(activeGoalId: nextActive?.id ?? ''));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final goals = ref.watch(goalsStreamProvider).valueOrNull ?? const <Goal>[];
@@ -70,9 +180,6 @@ class _GoalsSheetState extends ConsumerState<_GoalsSheet> {
 
   Widget _buildList(
       List<Goal> goals, String activeId, int weekday, TextTheme text) {
-    final bg =
-        ref.read(appSettingsStreamProvider).valueOrNull?.backgroundColorValue ??
-            AppSettings.defaultBgColor;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,11 +211,91 @@ class _GoalsSheetState extends ConsumerState<_GoalsSheet> {
                 style: text.bodySmall
                     ?.copyWith(color: AppColors.textSecondary),
               ),
-              trailing: g.id == activeId
-                  ? const Icon(Icons.check_circle_rounded,
-                      color: AppColors.emerald)
-                  : const Icon(Icons.radio_button_unchecked_rounded,
-                      color: AppColors.textMuted),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (g.id == activeId)
+                    const Icon(Icons.check_circle_rounded,
+                        color: AppColors.emerald, size: 22)
+                  else
+                    Icon(Icons.radio_button_unchecked_rounded,
+                        color: AppColors.textMuted.withValues(alpha: 0.5), size: 22),
+                  const SizedBox(width: 4),
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    onSelected: (value) async {
+                      switch (value) {
+                        case 'activate':
+                          await _setActive(g.id);
+                          if (mounted) Navigator.of(context).pop();
+                        case 'edit':
+                          await _editGoal(g);
+                        case 'delete':
+                          await _deleteGoal(g);
+                        case 'archive':
+                          await _toggleArchive(g);
+                        case 'unarchive':
+                          await _toggleArchive(g);
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: ListTile(
+                          leading: Icon(Icons.edit_rounded, color: AppColors.violet),
+                          title: Text('Editar'),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'activate',
+                        child: ListTile(
+                          leading: Icon(Icons.center_focus_strong_rounded,
+                              color: AppColors.cyan),
+                          title: Text('Activar'),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                      if (!g.archived)
+                        const PopupMenuItem(
+                          value: 'archive',
+                          child: ListTile(
+                            leading: Icon(Icons.archive_rounded,
+                                color: AppColors.textSecondary),
+                            title: Text('Archivar'),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          ),
+                        )
+                      else
+                        const PopupMenuItem(
+                          value: 'unarchive',
+                          child: ListTile(
+                            leading: Icon(Icons.unarchive_rounded,
+                                color: AppColors.textSecondary),
+                            title: Text('Desarchivar'),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          ),
+                        ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: ListTile(
+                          leading: Icon(Icons.delete_rounded, color: AppColors.red),
+                          title: Text('Eliminar',
+                              style: TextStyle(color: AppColors.red)),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                    ],
+                    icon: const Icon(Icons.more_vert_rounded,
+                        color: AppColors.textMuted, size: 20),
+                  ),
+                ],
+              ),
               onTap: () => _setActive(g.id),
             ),
         const Divider(height: 26),
@@ -129,45 +316,7 @@ class _GoalsSheetState extends ConsumerState<_GoalsSheet> {
                 .save(settings.copyWith(weighInWeekday: sel.first));
           },
         ),
-        const Divider(height: 26),
-        Text('Color de fondo',
-            style: text.labelLarge?.copyWith(
-                color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            for (final p in AppColors.backgroundPresets)
-              GestureDetector(
-                onTap: () async {
-                  final s = ref.read(appSettingsStreamProvider).valueOrNull;
-                  if (s == null) return;
-                  await ref.read(appSettingsRepositoryProvider).save(
-                    s.copyWith(backgroundColorValue: p.value),
-                  );
-                },
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Color(p.value),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: p.value == bg ? AppColors.violet : AppColors.border,
-                      width: p.value == bg ? 3 : 1,
-                    ),
-                  ),
-                  child: p.value == bg
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: Colors.white, size: 20)
-                      : null,
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 18),
+
         FilledButton.icon(
           onPressed: () => setState(() => _view = _GoalsView.create),
           icon: const Icon(Icons.add_rounded),

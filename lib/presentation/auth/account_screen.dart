@@ -1,7 +1,9 @@
+import 'package:consis_app/core/security/auth_controller.dart';
 import 'package:consis_app/core/theme/app_colors.dart';
 import 'package:consis_app/presentation/providers/security_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Pantalla "¿Estás registrado?" — login / registro con cuenta Supabase.
 ///
@@ -174,6 +176,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     style: const TextStyle(color: AppColors.cyan),
                   ),
                 ),
+                if (!_isRegister)
+                  TextButton(
+                    onPressed: _busy
+                        ? null
+                        : () => _showForgotPassword(context),
+                    child: Text(
+                      '¿Olvidaste tu contraseña?',
+                      style: text.bodySmall
+                          ?.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 Text(
                   'La cuenta sincroniza tus datos entre dispositivos.',
@@ -181,8 +194,162 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   style:
                       text.bodySmall?.copyWith(color: AppColors.textMuted),
                 ),
+                const SizedBox(height: 24),
+                const _DevFooter(),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showForgotPassword(BuildContext context) async {
+    final ctrl = ref.read(authControllerProvider);
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _ForgotPasswordDialog(ctrl: ctrl),
+    );
+  }
+}
+
+class _ForgotPasswordDialog extends StatefulWidget {
+  const _ForgotPasswordDialog({required this.ctrl});
+  final AuthController ctrl;
+
+  @override
+  State<_ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
+  final _emailCtrl = TextEditingController();
+  bool _busy = false;
+  String? _message;
+  bool _success = false;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final email = _emailCtrl.text.trim();
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      setState(() => _message = 'Ingresa un correo válido.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    final error = await widget.ctrl.resetPasswordRemote(email: email);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (error == null) {
+        _success = true;
+        _message =
+            'Te enviamos un enlace a $email.\nRevisa tu bandeja de entrada (y spam).';
+      } else {
+        _message = error;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+
+    return AlertDialog(
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('Recuperar contraseña',
+          style: TextStyle(fontWeight: FontWeight.w700)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Te enviaremos un link para restablecer tu contraseña.',
+            style: text.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          if (!_success)
+            TextField(
+              controller: _emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'correo@ejemplo.com',
+                prefixIcon: Icon(Icons.mail_outline_rounded),
+              ),
+            ),
+          if (_message != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _message!,
+              style: text.bodySmall?.copyWith(
+                color: _success ? AppColors.cyan : AppColors.coral,
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cerrar',
+              style: TextStyle(color: AppColors.textSecondary)),
+        ),
+        if (!_success)
+          FilledButton(
+            onPressed: _busy ? null : _send,
+            child: _busy
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text('Enviar link'),
+          ),
+      ],
+    );
+  }
+}
+
+class _DevFooter extends StatelessWidget {
+  const _DevFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => launchUrl(
+        Uri.parse('https://github.com/GaelDev08'),
+        mode: LaunchMode.externalApplication,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppColors.textMuted),
+            children: const [
+              TextSpan(text: 'Desarrollado por '),
+              TextSpan(
+                text: 'GaelDev08',
+                style: TextStyle(
+                  color: AppColors.cyan,
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.underline,
+                  decorationColor: AppColors.cyan,
+                ),
+              ),
+            ],
           ),
         ),
       ),

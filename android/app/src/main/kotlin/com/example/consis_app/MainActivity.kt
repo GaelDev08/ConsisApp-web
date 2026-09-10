@@ -1,4 +1,4 @@
-package com.consisapp.consis_app
+package com.example.consis_app
 
 import io.flutter.embedding.android.FlutterActivity
 

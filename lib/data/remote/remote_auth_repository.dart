@@ -10,6 +10,7 @@ abstract class RemoteAuthRepository {
   Future<void> signIn({required String email, required String password});
   Future<void> signUp({required String email, required String password});
   Future<void> signOut();
+  Future<void> resetPassword({required String email, String? redirectTo});
 }
 
 /// Implementación con Supabase Auth.
@@ -75,5 +76,16 @@ class SupabaseAuthRepository implements RemoteAuthRepository {
   @override
   Future<void> signOut() async {
     await SupabaseService.client.auth.signOut();
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    String? redirectTo,
+  }) async {
+    await SupabaseService.client.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: redirectTo,
+    );
   }
 }

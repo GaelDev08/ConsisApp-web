@@ -7,14 +7,14 @@ import '../local/hive_registry.dart';
 class UserProfileModel extends HiveObject {
   final String id;
   final String name;
-  final int? age;
+  final DateTime? birthdate;
   final String? country;
   final String? address;
 
   UserProfileModel({
     required this.id,
     required this.name,
-    required this.age,
+    this.birthdate,
     required this.country,
     required this.address,
   });
@@ -22,7 +22,7 @@ class UserProfileModel extends HiveObject {
   factory UserProfileModel.fromEntity(UserProfile e) => UserProfileModel(
         id: e.id,
         name: e.name,
-        age: e.age,
+        birthdate: e.birthdate,
         country: e.country,
         address: e.address,
       );
@@ -30,13 +30,13 @@ class UserProfileModel extends HiveObject {
   UserProfile toEntity() => UserProfile(
         id: id,
         name: name,
-        age: age,
+        birthdate: birthdate,
         country: country,
         address: address,
       );
 
   @override
-  String toString() => 'UserProfileModel($id, "$name", age=$age)';
+  String toString() => 'UserProfileModel($id, "$name", birthdate=$birthdate)';
 }
 
 /// TypeAdapter manual (sin build_runner).
@@ -53,7 +53,7 @@ class UserProfileModelAdapter extends TypeAdapter<UserProfileModel> {
     return UserProfileModel(
       id: fields[0] as String? ?? '',
       name: fields[1] as String? ?? '',
-      age: fields[2] as int?,
+      birthdate: fields[5] as DateTime?,
       country: fields[3] as String?,
       address: fields[4] as String?,
     );
@@ -67,11 +67,11 @@ class UserProfileModelAdapter extends TypeAdapter<UserProfileModel> {
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.name)
-      ..writeByte(2)
-      ..write(obj.age)
       ..writeByte(3)
       ..write(obj.country)
       ..writeByte(4)
-      ..write(obj.address);
+      ..write(obj.address)
+      ..writeByte(5)
+      ..write(obj.birthdate);
   }
 }

@@ -11,14 +11,14 @@ class UserProfile {
   /// Nombre mostrado en el saludo (ej. "Cesar"). Vacío = sin configurar.
   final String name;
 
-  final int? age;
+  final DateTime? birthdate;
   final String? country;
   final String? address;
 
   const UserProfile({
     this.id = singletonId,
     this.name = '',
-    this.age,
+    this.birthdate,
     this.country,
     this.address,
   });
@@ -31,14 +31,14 @@ class UserProfile {
   UserProfile copyWith({
     String? id,
     String? name,
-    Object? age = _unset,
+    Object? birthdate = _unset,
     Object? country = _unset,
     Object? address = _unset,
   }) {
     return UserProfile(
       id: id ?? this.id,
       name: name ?? this.name,
-      age: identical(age, _unset) ? this.age : age as int?,
+      birthdate: identical(birthdate, _unset) ? this.birthdate : birthdate as DateTime?,
       country:
           identical(country, _unset) ? this.country : country as String?,
       address:
@@ -52,14 +52,14 @@ class UserProfile {
       (other is UserProfile &&
           other.id == id &&
           other.name == name &&
-          other.age == age &&
+          other.birthdate == birthdate &&
           other.country == country &&
           other.address == address);
 
   @override
-  int get hashCode => Object.hash(id, name, age, country, address);
+  int get hashCode => Object.hash(id, name, birthdate, country, address);
 
   @override
   String toString() =>
-      'UserProfile($id, "$name", age=$age, country=$country)';
+      'UserProfile($id, "$name", birthdate=$birthdate, country=$country)';
 }

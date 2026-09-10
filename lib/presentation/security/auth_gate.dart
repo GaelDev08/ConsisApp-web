@@ -60,7 +60,7 @@ class _AuthGateState extends ConsumerState<AuthGate>
 
   @override
   Widget build(BuildContext context) {
-    final status = ref.watch(authControllerProvider).status;
+    final AuthStatus status = ref.watch(authControllerProvider).status;
 
     return switch (status) {
       AuthStatus.loading => const Scaffold(

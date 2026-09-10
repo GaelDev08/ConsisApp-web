@@ -1,6 +1,7 @@
 import 'package:consis_app/core/theme/app_colors.dart';
 import 'package:consis_app/core/utils/greeting.dart' show Greeting;
 import 'package:consis_app/domain/entities/user_profile.dart';
+import 'package:consis_app/domain/entities/app_settings.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/sheet_shell.dart';
 import 'package:consis_app/presentation/providers/dashboard_providers.dart';
 import 'package:consis_app/presentation/providers/repository_providers.dart';
@@ -25,9 +26,12 @@ class _ProfileSheet extends ConsumerStatefulWidget {
 
 class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
   final TextEditingController _nameCtrl = TextEditingController();
-  final TextEditingController _ageCtrl = TextEditingController();
   final TextEditingController _countryCtrl = TextEditingController();
   final TextEditingController _addressCtrl = TextEditingController();
+  
+  DateTime? _birthdate;
+  ThemeMode? _themeMode;
+
   bool _seeded = false;
   String? _error;
 
@@ -36,21 +40,35 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
     return n.isEmpty ? '?' : n[0].toUpperCase();
   }
 
-  void _seedFrom(UserProfile p) {
+  void _seedFrom(UserProfile p, AppSettings s) {
     _nameCtrl.text = p.name;
-    _ageCtrl.text = p.age?.toString() ?? '';
     _countryCtrl.text = p.country ?? '';
     _addressCtrl.text = p.address ?? '';
+    _birthdate = p.birthdate;
+    _themeMode = s.themeMode;
     _seeded = true;
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _ageCtrl.dispose();
     _countryCtrl.dispose();
     _addressCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickBirthdate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birthdate ?? DateTime(now.year - 25),
+      firstDate: DateTime(1900),
+      lastDate: now,
+      helpText: 'Fecha de nacimiento',
+    );
+    if (picked != null) {
+      setState(() => _birthdate = picked);
+    }
   }
 
   Future<void> _save() async {
@@ -60,30 +78,26 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
       return;
     }
 
-    final ageRaw = _ageCtrl.text.trim();
-    int? age;
-    if (ageRaw.isNotEmpty) {
-      age = int.tryParse(ageRaw);
-      if (age == null || age < 1 || age > 130) {
-        setState(() => _error = 'Edad inválida (1–130)');
-        return;
-      }
-    }
-
     final repo = ref.read(userProfileRepositoryProvider);
+    final settingsRepo = ref.read(appSettingsRepositoryProvider);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
     await repo.save(
       UserProfile(
         name: name,
-        age: age,
+        birthdate: _birthdate,
         country:
             _countryCtrl.text.trim().isEmpty ? null : _countryCtrl.text.trim(),
         address:
             _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
       ),
     );
+
+    if (_themeMode != null) {
+      final currentSettings = await settingsRepo.load();
+      await settingsRepo.save(currentSettings.copyWith(themeMode: _themeMode));
+    }
 
     navigator.pop();
     messenger.showSnackBar(const SnackBar(
@@ -98,17 +112,18 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(userProfileStreamProvider).valueOrNull;
-    if (!_seeded && profile != null) {
-      // Semilla única al tener datos cargados (evita pisar edición del usuario).
-      _seedFrom(profile);
+    final settings = ref.watch(appSettingsStreamProvider).valueOrNull;
+    
+    if (!_seeded && profile != null && settings != null) {
+      _seedFrom(profile, settings);
     } else if (!_seeded) {
-      _seeded = true; // sin perfil aún → campos vacíos
+      _seeded = true;
     }
 
     final text = Theme.of(context).textTheme;
 
     return SheetShell(
-      title: 'Mi perfil',
+      title: 'Configuración / Perfil',
       subtitle: Greeting.forNow(name: _nameCtrl.text),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -147,13 +162,23 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
             children: [
               Expanded(
                 flex: 2,
-                child: TextField(
-                  controller: _ageCtrl,
-                  maxLength: 3,
-                  keyboardType: const TextInputType.numberWithOptions(),
-                  decoration: const InputDecoration(
-                    hintText: 'Edad (opcional)',
-                    counterText: '',
+                child: GestureDetector(
+                  onTap: _pickBirthdate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Text(
+                      _birthdate != null
+                          ? '\${_birthdate!.day}/\${_birthdate!.month}/\${_birthdate!.year}'
+                          : 'Nacimiento',
+                      style: text.bodyLarge?.copyWith(
+                        color: _birthdate != null ? AppColors.textPrimary : AppColors.textMuted,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -180,6 +205,21 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
               prefixIcon: Icon(Icons.location_on_outlined),
             ),
           ),
+          const SizedBox(height: 24),
+          Text('Tema de la Aplicación', style: text.titleMedium),
+          const SizedBox(height: 8),
+          SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment(value: ThemeMode.light, label: Text('Claro'), icon: Icon(Icons.light_mode)),
+              ButtonSegment(value: ThemeMode.dark, label: Text('Oscuro'), icon: Icon(Icons.dark_mode)),
+              ButtonSegment(value: ThemeMode.system, label: Text('Auto'), icon: Icon(Icons.settings_suggest)),
+            ],
+            selected: {_themeMode ?? ThemeMode.system},
+            onSelectionChanged: (set) {
+              setState(() => _themeMode = set.first);
+            },
+            showSelectedIcon: false,
+          ),
           if (_error != null) ...[
             const SizedBox(height: 10),
             Text(_error!,
@@ -190,7 +230,7 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
             onPressed: _save,
             style:
                 FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-            child: const Text('Guardar perfil',
+            child: const Text('Guardar configuración',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           ),
         ],
