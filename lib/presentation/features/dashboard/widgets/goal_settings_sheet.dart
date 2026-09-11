@@ -44,6 +44,23 @@ class _GoalsSheetState extends ConsumerState<_GoalsSheet> {
         .save(settings.copyWith(activeGoalId: goalId));
   }
 
+  /// Avisa cuando la meta quedó guardada localmente pero no pudo
+  /// sincronizarse con la cuenta (Supabase).
+  void _notifySyncFailure(Object error) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.warning_rounded, size: 18, color: AppColors.amber),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            'Guardado en este dispositivo, pero no se sincronizó con tu '
+            'cuenta: $error',
+          ),
+        ),
+      ]),
+    ));
+  }
+
   Future<void> _editGoal(Goal goal) async {
     final controller = TextEditingController(text: goal.title);
     final result = await showDialog<String>(
@@ -83,7 +100,11 @@ class _GoalsSheetState extends ConsumerState<_GoalsSheet> {
 
     if (result != null && result.isNotEmpty && result != goal.title) {
       final updated = goal.copyWith(title: result);
-      await ref.read(goalRepositoryProvider).save(updated);
+      try {
+        await ref.read(goalRepositoryProvider).save(updated);
+      } catch (e) {
+        _notifySyncFailure(e);
+      }
 
       // Si era la meta activa, mantenerla activa tras la edición
       final settings = ref.read(appSettingsStreamProvider).valueOrNull;
@@ -138,7 +159,11 @@ class _GoalsSheetState extends ConsumerState<_GoalsSheet> {
 
   Future<void> _toggleArchive(Goal goal) async {
     final updated = goal.copyWith(archived: !goal.archived);
-    await ref.read(goalRepositoryProvider).save(updated);
+    try {
+      await ref.read(goalRepositoryProvider).save(updated);
+    } catch (e) {
+      _notifySyncFailure(e);
+    }
 
     // Si archivamos la meta activa, mover el foco a otra meta
     if (goal.archived == false) {
@@ -420,7 +445,14 @@ class _CreateGoalFormState extends ConsumerState<_CreateGoalForm> {
       createdAt: now,
     );
 
-    await ref.read(goalRepositoryProvider).save(goal);
+    Object? syncError;
+    try {
+      await ref.read(goalRepositoryProvider).save(goal);
+    } catch (e, st) {
+      // ignore: avoid_print
+      debugPrint('[SyncGoal] ERROR al sincronizar meta: $e\n$st');
+      syncError = e;
+    }
     // Recordatorio diario (solo móvil). Si la meta no tiene horario, no se programa.
     await NotificationService.scheduleGoalReminder(
       goalId: goal.id,
@@ -439,10 +471,22 @@ class _CreateGoalFormState extends ConsumerState<_CreateGoalForm> {
     navigator.pop();
     messenger.showSnackBar(SnackBar(
       content: Row(children: [
-        const Icon(Icons.check_circle_rounded,
-            size: 18, color: AppColors.emerald),
+        Icon(
+          syncError != null
+              ? Icons.warning_rounded
+              : Icons.check_circle_rounded,
+          size: 18,
+          color: syncError != null ? AppColors.amber : AppColors.emerald,
+        ),
         const SizedBox(width: 10),
-        Expanded(child: Text('Meta "$title" creada')),
+        Expanded(
+          child: Text(
+            syncError != null
+                ? 'Meta guardada en este dispositivo, pero no se pudo '
+                    'sincronizar con tu cuenta: $syncError'
+                : 'Meta "$title" creada',
+          ),
+        ),
       ]),
     ));
   }

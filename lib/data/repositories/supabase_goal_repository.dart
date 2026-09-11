@@ -69,7 +69,7 @@ class SupabaseGoalRepository implements GoalRepository {
   }
 
   Map<String, dynamic> _toRow(Goal g) => {
-        if (g.id.isNotEmpty) 'id': g.id,
+        'id': g.id,
         'user_id': _userId,
         'type': g.type.name,
         'title': g.title,

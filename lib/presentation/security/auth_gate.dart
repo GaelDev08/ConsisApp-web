@@ -3,6 +3,7 @@ import 'package:consis_app/core/theme/app_colors.dart';
 import 'package:consis_app/presentation/auth/account_screen.dart';
 import 'package:consis_app/presentation/providers/security_providers.dart';
 import 'package:consis_app/presentation/security/lock_screen.dart';
+import 'package:consis_app/presentation/security/password_recovery_screen.dart';
 import 'package:consis_app/presentation/security/pin_setup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,6 +72,7 @@ class _AuthGateState extends ConsumerState<AuthGate>
         ),
       AuthStatus.needsAccount => const AccountScreen(),
       AuthStatus.needsPinSetup => const PinSetupScreen(),
+      AuthStatus.recoveringPassword => const PasswordRecoveryScreen(),
       AuthStatus.locked => const LockScreen(),
       AuthStatus.unlocked => widget.child,
     };

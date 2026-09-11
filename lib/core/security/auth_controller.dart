@@ -17,6 +17,9 @@ enum AuthStatus {
   /// Primera vez: crear + confirmar PIN.
   needsPinSetup,
 
+  /// La app se abrió desde un enlace de recuperación de contraseña.
+  recoveringPassword,
+
   /// Sesión bloqueada (arranque, rebloqueo o manual).
   locked,
 
@@ -80,6 +83,12 @@ class AuthController extends ChangeNotifier {
   bool _initialized = false;
   bool _autoPromptedThisSession = false;
 
+  StreamSubscription<RemoteAuthEvent>? _remoteAuthSubscription;
+  bool _pendingPasswordRecovery = false;
+
+  /// ¿La sesión actual proviene de un enlace de recuperación de contraseña?
+  bool get hasPendingPasswordRecovery => _pendingPasswordRecovery;
+
   /// Idempotente: se llama una vez al arrancar (post-frame desde AuthGate).
   Future<void> initialize() async {
     if (_initialized) return;
@@ -90,10 +99,26 @@ class AuthController extends ChangeNotifier {
     //    la app sigue 100% local como antes.
     await _remote?.initialize();
     final remote = _remote;
-    if (remote != null && remote.enabled && !remote.isSignedIn) {
-      _status = AuthStatus.needsAccount;
-      notifyListeners();
-      return;
+    if (remote != null && remote.enabled) {
+      // Observa eventos de auth (replay): si la app se abrió desde un enlace
+      // `type=recovery`, el evento ya se emitió durante Supabase.initialize
+      // y ReplaySubject lo vuelve a entregar aquí.
+      _remoteAuthSubscription = remote.listen(_onRemoteAuthEvent);
+
+      // Deja que ReplaySubject entregue eventos pendientes antes de decidir.
+      await Future.delayed(Duration.zero);
+
+      if (_pendingPasswordRecovery || remote.hasPendingPasswordRecovery) {
+        _pendingPasswordRecovery = true;
+        _status = AuthStatus.recoveringPassword;
+        notifyListeners();
+        return;
+      }
+      if (!remote.isSignedIn) {
+        _status = AuthStatus.needsAccount;
+        notifyListeners();
+        return;
+      }
     }
 
     // 2) App lock local (PIN/biometría) como segunda capa.
@@ -183,6 +208,39 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  /// Responde a eventos remotos de autenticación.
+  void _onRemoteAuthEvent(RemoteAuthEvent event) {
+    if (event != RemoteAuthEvent.passwordRecovery) return;
+    _pendingPasswordRecovery = true;
+    _status = AuthStatus.recoveringPassword;
+    notifyListeners();
+  }
+
+  /// Cambia la contraseña remota durante el flujo de recuperación.
+  /// Devuelve null si OK, o un mensaje de error legible.
+  Future<String?> changeRemotePassword({required String newPassword}) async {
+    final remote = _remote;
+    if (remote == null || !remote.enabled) {
+      return 'La cuenta no está configurada en esta compilación.';
+    }
+    if (newPassword.length < 6) {
+      return 'La contraseña debe tener al menos 6 caracteres.';
+    }
+    try {
+      await remote.updatePassword(newPassword: newPassword);
+      _pendingPasswordRecovery = false;
+      final email = remote.email?.trim();
+      if (email != null && email.isNotEmpty) {
+        await _store.saveAccountEmail(email);
+        _accountEmail = email;
+      }
+      await _continueAfterRemoteAuth();
+      return null;
+    } catch (e) {
+      return _friendlyAuthError(e);
+    }
+  }
+
   Future<void> _continueAfterRemoteAuth() async {
     final hasPin = await _store.hasPinConfigured();
     _biometricEnabled = await _store.isBiometricEnabled();
@@ -205,6 +263,10 @@ class AuthController extends ChangeNotifier {
     }
     if (msg.contains('network')) {
       return 'Sin conexión. Revisa tu internet e intenta de nuevo.';
+    }
+    if (msg.contains('password') &&
+        (msg.contains('weak') || msg.contains('at least'))) {
+      return 'La contraseña debe tener al menos 6 caracteres.';
     }
     return 'No pudimos completar la acción. Intenta de nuevo.';
   }
@@ -320,6 +382,13 @@ class AuthController extends ChangeNotifier {
     await _store.setLockTimeoutSeconds(safe);
     _lockTimeoutSeconds = safe;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _remoteAuthSubscription?.cancel();
+    _remoteAuthSubscription = null;
+    super.dispose();
   }
 }
 

@@ -32,6 +32,12 @@ class SyncGoalRepository implements GoalRepository {
 
   @override
   Stream<List<Goal>> watchAll() async* {
+    // Con sesión: disparar una sincronización en segundo plano (sube las
+    // metas locales que aún no están en la nube y baja cambios remotos).
+    if (_shouldSync) {
+      unawaited(_syncDownThenUp(await _local.loadAll()));
+    }
+
     // Siempre emitir desde local primero (inmediato)
     await for (final goals in _local.watchAll()) {
       yield goals;
@@ -55,13 +61,11 @@ class SyncGoalRepository implements GoalRepository {
     // 1. Guardar localmente siempre (offline-first)
     await _local.save(goal);
 
-    // 2. Sincronizar a la nube si hay sesión
+    // 2. Sincronizar a la nube si hay sesión.
+    //    Propagamos el error para que la UI avise; lo local ya quedó
+    //    guardado y se reintentará en la próxima apertura con sesión.
     if (_shouldSync) {
-      try {
-        await remote.save(goal);
-      } catch (_) {
-        // Fallo de red: se reintentará en la próxima sincronización
-      }
+      await remote.save(goal);
     }
   }
 

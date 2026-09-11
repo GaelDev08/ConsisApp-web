@@ -57,3 +57,21 @@ adb install -r build\app\outputs\flutter-apk\app-debug.apk
 ## Notas
 - La contraseña no se guarda localmente: solo el token de sesión.
 - El PIN sigue actuando como "app lock" local después de la cuenta.
+
+## Troubleshooting: meta guardada en la app pero no en Supabase
+Si la meta aparece en la app pero no en el panel de Supabase:
+1. Abre **SQL Editor → New query** y pega TODO el contenido de
+   `supabase/diagnose_goals_sync.sql`, luego **Run**.
+2. Revisa el **paso 1**: si la columna `scheduled_time` NO aparece en
+   `public.goals`, ejecuta `supabase/migration_scheduled_time.sql` (idempotente)
+   o descomenta el **paso 6** del script de diagnóstico.
+3. Revisa el **paso 2**: deben existir las 4 políticas RLS de `public.goals`; si
+   no, vuelve a ejecutar `supabase/schema.sql`.
+
+## Recuperación de contraseña (temas de Auth / email)
+- En Supabase Dashboard → **Authentication → URL Configuration**, `Site URL`
+  debe apuntar a la URL de la app (ej. `https://tu-app.vercel.app`).
+- En **Authentication → Emails → Templates → Reset password**, la url del enlace
+  debe incluir un `redirect_to` que apunte a la app (la app lo enviará solo si
+  compilas la versión nueva). Así el enlace abre la app y ésta pide la nueva
+  contraseña validando ≥ 6 caracteres.
