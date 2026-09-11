@@ -8,6 +8,12 @@ import 'package:consis_app/domain/entities/user_profile.dart';
 import 'package:consis_app/domain/repositories/user_profile_repository.dart';
 import 'package:consis_app/domain/entities/app_settings.dart';
 import 'package:consis_app/domain/repositories/app_settings_repository.dart';
+import 'package:consis_app/domain/entities/weight_record.dart';
+import 'package:consis_app/domain/repositories/weight_record_repository.dart';
+import 'package:consis_app/domain/entities/friction_log.dart';
+import 'package:consis_app/domain/repositories/friction_log_repository.dart';
+import 'package:consis_app/domain/entities/nutrition_check.dart';
+import 'package:consis_app/domain/repositories/nutrition_check_repository.dart';
 
 // --- SessionEntry ---
 class SyncSessionEntryRepository implements SessionEntryRepository {
@@ -89,15 +95,32 @@ class SyncWeightRecordRepository implements WeightRecordRepository {
   bool get _shouldSync => ref.read(authControllerProvider).signedInRemote;
 
   @override Stream<List<WeightRecord>> watchAll() async* { if (_shouldSync) unawaited(loadAll()); yield* _local.watchAll(); }
-  @override Future<List<WeightRecord>> loadAll() async {
-    final localItems = await _local.loadAll();
-    if (_shouldSync) { remote.loadAll().then((cloudItems) { for(var c in cloudItems) _local.save(c); }); }
-    return localItems;
+  Future<void> loadAll() async {
+    if (_shouldSync) {
+      remote.loadAll().then((cloudItems) {
+        for (var c in cloudItems) {
+          _local.save(date: c.date, weightKg: c.weightKg);
+        }
+      });
+    }
   }
-  @override Future<void> save(WeightRecord e) async {
-    await _local.save(e);
+
+  @override Future<WeightRecord?> latest() => _local.latest();
+
+  @override Future<WeightRecord> save({required DateTime date, required double weightKg}) async {
+    final e = await _local.save(date: date, weightKg: weightKg);
     if (_shouldSync) { try { await remote.save(e); } catch (_) {} }
+    return e;
   }
+  
+  @override Future<int> importHistory(List<WeightRecord> records) async {
+    final cnt = await _local.importHistory(records);
+    if (_shouldSync) { 
+       for (var r in records) { try { await remote.save(r); } catch(_) {} }
+    }
+    return cnt;
+  }
+  
   @override Future<void> deleteById(String id) async {
     await _local.deleteById(id);
     if (_shouldSync) { try { await remote.deleteById(id); } catch (_) {} }
@@ -113,14 +136,20 @@ class SyncNutritionCheckRepository implements NutritionCheckRepository {
   bool get _shouldSync => ref.read(authControllerProvider).signedInRemote;
 
   @override Stream<List<NutritionCheck>> watchAll() async* { if (_shouldSync) unawaited(loadAll()); yield* _local.watchAll(); }
-  @override Future<List<NutritionCheck>> loadAll() async {
-    final localItems = await _local.loadAll();
-    if (_shouldSync) { remote.loadAll().then((cloudItems) { for(var c in cloudItems) _local.save(c); }); }
-    return localItems;
+  Future<void> loadAll() async {
+    if (_shouldSync) { 
+      remote.loadAll().then((cloudItems) { 
+        for(var c in cloudItems) _local.setForDay(c); 
+      }); 
+    }
   }
-  @override Future<void> save(NutritionCheck e) async {
-    await _local.save(e);
+  
+  @override Future<NutritionCheck?> getByDay(DateTime day) => _local.getByDay(day);
+
+  @override Future<NutritionCheck> setForDay(NutritionCheck check) async {
+    final e = await _local.setForDay(check);
     if (_shouldSync) { try { await remote.save(e); } catch (_) {} }
+    return e;
   }
   @override Future<void> deleteById(String id) async {
     await _local.deleteById(id);
@@ -137,11 +166,22 @@ class SyncFrictionLogRepository implements FrictionLogRepository {
   bool get _shouldSync => ref.read(authControllerProvider).signedInRemote;
 
   @override Stream<List<FrictionLog>> watchAll() async* { if (_shouldSync) unawaited(loadAll()); yield* _local.watchAll(); }
-  @override Future<List<FrictionLog>> loadAll() async {
-    final localItems = await _local.loadAll();
-    if (_shouldSync) { remote.loadAll().then((cloudItems) { for(var c in cloudItems) _local.save(c); }); }
-    return localItems;
+  @override Stream<List<FrictionLog>> watchByGoal(String goalId) async* { if (_shouldSync) unawaited(loadAll()); yield* _local.watchByGoal(goalId); }
+  @override Future<List<FrictionLog>> findByDay(DateTime day) => _local.findByDay(day);
+
+  Future<void> loadAll() async {
+    if (_shouldSync) { 
+      remote.loadAll().then((cloudItems) { 
+        for(var c in cloudItems) _local.save(c); 
+      }); 
+    }
   }
+
+  @override Future<void> save(FrictionLog log) async {
+    await _local.save(log);
+    if (_shouldSync) { try { await remote.save(log); } catch (_) {} }
+  }
+
   @override Future<FrictionLog> add({required String goalId, required DateTime day, String? tag, String? customLabel, String? note}) async {
     final res = await _local.add(goalId: goalId, day: day, tag: tag, customLabel: customLabel, note: note);
     if (_shouldSync) { try { await remote.save(res); } catch (_) {} }

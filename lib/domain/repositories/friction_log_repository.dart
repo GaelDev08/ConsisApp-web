@@ -18,5 +18,8 @@ abstract interface class FrictionLogRepository {
     String? note,
   });
 
+  /// Permite sincronizar/insertar una bitÃ¡cora completa (con id existente).
+  Future<void> save(FrictionLog log);
+
   Future<void> deleteById(String id);
 }

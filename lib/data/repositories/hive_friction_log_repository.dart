@@ -61,6 +61,11 @@ class HiveFrictionLogRepository implements FrictionLogRepository {
   }
 
   @override
+  Future<void> save(FrictionLog log) async {
+    await _box.put(log.id, FrictionLogModel.fromEntity(log));
+  }
+
+  @override
   Future<void> deleteById(String id) => _box.delete(id);
 
   String newId() => _uuid.v4();
