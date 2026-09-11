@@ -1,10 +1,13 @@
 import 'package:consis_app/core/theme/app_colors.dart';
 import 'package:consis_app/core/utils/datetime_x.dart';
+import 'package:consis_app/core/utils/screenshot_share.dart';
 import 'package:consis_app/core/utils/spanish_dates.dart';
 import 'package:consis_app/domain/entities/nutrition_level.dart';
+import 'package:consis_app/domain/entities/weight_record.dart';
 import 'package:consis_app/presentation/features/analytics/monthly_data.dart';
 import 'package:consis_app/presentation/features/analytics/widgets/friction_ranking.dart';
 import 'package:consis_app/presentation/providers/analytics_providers.dart';
+import 'package:consis_app/presentation/providers/repository_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -24,6 +27,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen> {
   late DateTime _focused = _firstOfMonth(DateTime.now());
   DateTime? _selectedDay;
   MonthlyData? _lastData;
+  final GlobalKey _monthlyShareKey = GlobalKey();
 
   static DateTime _firstOfMonth(DateTime d) => DateTime(d.year, d.month);
 
@@ -44,34 +48,53 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen> {
     final text = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(_headerTitle)),
+      appBar: AppBar(
+        title: Text(_headerTitle),
+        actions: [
+          IconButton(
+            tooltip: 'Compartir progreso',
+            icon: const Icon(Icons.share_rounded, color: AppColors.cyan),
+            onPressed: () => ScreenshotShare.captureAndShare(
+              repaintKey: _monthlyShareKey,
+              context: context,
+              text: '¡Mi reporte de consistencia mensual en ConsisApp! 📊🔥 #ConsisApp',
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _calendarCard(),
-              const SizedBox(height: 16),
-              if (data != null) ...[
-                _summaryRow(data),
-                const SizedBox(height: 22),
-                Text('Fricciones del mes',
-                    style:
-                        text.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 10),
-                FrictionRanking(ranking: data.frictionRanking),
-              ] else
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 48),
-                  child: Center(
-                    child: CircularProgressIndicator(color: AppColors.violet),
+          child: RepaintBoundary(
+            key: _monthlyShareKey,
+            child: Container(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                _calendarCard(),
+                const SizedBox(height: 16),
+                if (data != null) ...[
+                  _summaryRow(data),
+                  const SizedBox(height: 22),
+                  Text('Fricciones del mes',
+                      style:
+                          text.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 10),
+                  FrictionRanking(ranking: data.frictionRanking),
+                ] else
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48),
+                    child: Center(
+                      child: CircularProgressIndicator(color: AppColors.violet),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -237,6 +260,8 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen> {
     );
   }
 }
+
+
 
 class _MicroDot extends StatelessWidget {
   final Color color;

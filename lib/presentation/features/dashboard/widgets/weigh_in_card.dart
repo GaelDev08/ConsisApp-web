@@ -2,6 +2,7 @@ import 'package:consis_app/core/theme/app_colors.dart';
 import 'package:consis_app/core/utils/spanish_dates.dart';
 import 'package:consis_app/presentation/features/dashboard/dashboard_data.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/weight_log_sheet.dart';
+import 'package:consis_app/presentation/features/analytics/weight_history_screen.dart';
 import 'package:flutter/material.dart';
 
 /// Tarjeta del control de peso semanal según [WeighInStatus]:
@@ -47,45 +48,56 @@ class WeighInCard extends StatelessWidget {
         ),
     };
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.07),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: accent, size: 22),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const WeightHistoryScreen()),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: accent.withValues(alpha: 0.35)),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                if (subtitle != null && subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: text.bodySmall
-                        ?.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ],
-            ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: accent, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    if (subtitle != null && subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: text.bodySmall
+                            ?.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              if (trailing != null) trailing,
+            ],
           ),
-          const SizedBox(width: 10),
-          if (trailing != null) trailing,
-        ],
+        ),
       ),
     );
   }

@@ -2,17 +2,20 @@ import 'package:consis_app/data/repositories/hive_app_settings_repository.dart';
 import 'package:consis_app/data/repositories/hive_friction_log_repository.dart';
 import 'package:consis_app/data/repositories/hive_goal_repository.dart';
 import 'package:consis_app/data/repositories/hive_nutrition_check_repository.dart';
+import 'package:consis_app/data/repositories/hive_reminder_repository.dart';
 import 'package:consis_app/data/repositories/hive_session_entry_repository.dart';
 import 'package:consis_app/data/repositories/hive_user_profile_repository.dart';
 import 'package:consis_app/data/repositories/hive_weight_record_repository.dart';
 import 'package:consis_app/data/repositories/supabase_goal_repository.dart';
-import 'package:consis_app/data/repositories/sync_goal_repository.dart';
 import 'package:consis_app/data/repositories/supabase_repositories.dart';
+import 'package:consis_app/data/repositories/sync_goal_repository.dart';
 import 'package:consis_app/data/repositories/sync_repositories.dart';
+import 'package:consis_app/domain/entities/reminder.dart';
 import 'package:consis_app/domain/repositories/app_settings_repository.dart';
 import 'package:consis_app/domain/repositories/friction_log_repository.dart';
 import 'package:consis_app/domain/repositories/goal_repository.dart';
 import 'package:consis_app/domain/repositories/nutrition_check_repository.dart';
+import 'package:consis_app/domain/repositories/reminder_repository.dart';
 import 'package:consis_app/domain/repositories/session_entry_repository.dart';
 import 'package:consis_app/domain/repositories/user_profile_repository.dart';
 import 'package:consis_app/domain/repositories/weight_record_repository.dart';
@@ -60,4 +63,13 @@ final userProfileRepositoryProvider = Provider<UserProfileRepository>((ref) {
     remote: SupabaseUserProfileRepository(),
     ref: ref,
   );
+});
+
+final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
+  return HiveReminderRepository();
+});
+
+final remindersStreamProvider = StreamProvider<List<Reminder>>((ref) {
+  final repo = ref.watch(reminderRepositoryProvider);
+  return repo.watchAll();
 });

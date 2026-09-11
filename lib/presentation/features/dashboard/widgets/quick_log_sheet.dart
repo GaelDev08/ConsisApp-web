@@ -35,6 +35,13 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   String _minutesStr = '30';
   DateTime _selectedDate = DateTime.now();
   final Set<String> _selectedTags = {};
+  final TextEditingController _customTagCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _customTagCtrl.dispose();
+    super.dispose();
+  }
 
   int get _minutes => int.tryParse(_minutesStr) ?? 0;
 
@@ -50,6 +57,16 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     if (picked != null) {
       setState(() {
         _selectedDate = DateTime(picked.year, picked.month, picked.day);
+      });
+    }
+  }
+
+  void _addCustomTag() {
+    final text = _customTagCtrl.text.trim();
+    if (text.isNotEmpty) {
+      setState(() {
+        _selectedTags.add(text);
+        _customTagCtrl.clear();
       });
     }
   }
@@ -110,11 +127,6 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   @override
   Widget build(BuildContext context) {
     final data = widget.data;
-    final goal = ref.watch(activeGoalProvider);
-    final showTags = goal?.type == GoalType.timeAccumulated;
-    final tagOptions = (goal != null && goal.contextTags.isNotEmpty)
-        ? goal.contextTags
-        : kStudyContextTagPresets;
 
     return SheetShell(
       title: 'Registrar sesión',
@@ -129,27 +141,60 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
             onTap: _pickDate,
           ),
           const SizedBox(height: 16),
-          if (showTags) ...[
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final tag in tagOptions)
-                  _TagChip(
-                    label: tag,
-                    selected: _selectedTags.contains(tag),
-                    onTap: () => setState(() {
-                      if (_selectedTags.contains(tag)) {
-                        _selectedTags.remove(tag);
-                      } else {
-                        _selectedTags.add(tag);
-                      }
-                    }),
+          
+          // Categoría / Etiqueta personalizada
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Categoría / Detalle',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _customTagCtrl,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: const InputDecoration(
+                        hintText: 'Escribe la categoría o tema...',
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                      onSubmitted: (_) => _addCustomTag(),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    onPressed: _addCustomTag,
+                    icon: const Icon(Icons.add_rounded),
+                    tooltip: 'Añadir categoría',
+                  ),
+                ],
+              ),
+              if (_selectedTags.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final tag in _selectedTags)
+                      _TagChip(
+                        label: tag,
+                        selected: true,
+                        onTap: () => setState(() => _selectedTags.remove(tag)),
+                      ),
+                  ],
+                ),
               ],
-            ),
-            const SizedBox(height: 16),
-          ],
+            ],
+          ),
+          const SizedBox(height: 16),
           
           // Display
           Center(

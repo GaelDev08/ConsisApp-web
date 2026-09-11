@@ -6,6 +6,7 @@ import '../models/app_settings_model.dart';
 import '../models/friction_log_model.dart';
 import '../models/goal_model.dart';
 import '../models/nutrition_check_model.dart';
+import '../models/reminder_model.dart';
 import '../models/session_entry_model.dart';
 import '../models/user_profile_model.dart';
 import '../models/weight_record_model.dart';
@@ -39,6 +40,7 @@ abstract final class HiveManager {
     await _openBoxSafe<NutritionCheckModel>(BoxNames.nutrition, cipher);
     await _openBoxSafe<AppSettingsModel>(BoxNames.settings, cipher);
     await _openBoxSafe<UserProfileModel>(BoxNames.profile, cipher);
+    await _openBoxSafe<ReminderModel>(BoxNames.reminders, cipher);
 
     // Semilla de ajustes por defecto (día de pesaje = lunes, meta 200 min).
     final settings = Hive.box<AppSettingsModel>(BoxNames.settings);
@@ -86,6 +88,7 @@ abstract final class HiveManager {
     safe(BoxTypeIds.goal, GoalModelAdapter());
     safe(BoxTypeIds.activityEntry, ActivityEntryModelAdapter());
     safe(BoxTypeIds.userProfile, UserProfileModelAdapter());
+    safe(BoxTypeIds.reminder, ReminderModelAdapter());
   }
 
   // ---- Accesos tipados a las cajas (usados por los repos en Fases 2-4) ----
@@ -109,4 +112,7 @@ abstract final class HiveManager {
 
   static Box<UserProfileModel> get profile =>
       Hive.box<UserProfileModel>(BoxNames.profile);
+
+  static Box<ReminderModel> get reminders =>
+      Hive.box<ReminderModel>(BoxNames.reminders);
 }

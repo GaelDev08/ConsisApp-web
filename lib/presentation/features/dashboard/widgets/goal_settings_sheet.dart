@@ -8,6 +8,7 @@ import 'package:consis_app/domain/entities/goal_type.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/sheet_shell.dart';
 import 'package:consis_app/presentation/providers/dashboard_providers.dart';
 import 'package:consis_app/presentation/providers/repository_providers.dart';
+import 'package:consis_app/presentation/security/widgets/pin_keypad.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -408,6 +409,81 @@ class _CreateGoalFormState extends ConsumerState<_CreateGoalForm> {
     if (picked != null) setState(() => _scheduledTime = picked);
   }
 
+  Future<void> _pickTargetWithKeypad() async {
+    String currentVal = _target.toString();
+    final result = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Ingresa la meta (${goalUnitLabel(_unit)})',
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    currentVal.isEmpty ? '0' : currentVal,
+                    style: const TextStyle(
+                      fontSize: 42,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.violet,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  NumericKeypad(
+                    onDigit: (digit) {
+                      setModalState(() {
+                        if (currentVal == '0') {
+                          currentVal = digit;
+                        } else if (currentVal.length < 5) {
+                          currentVal += digit;
+                        }
+                      });
+                    },
+                    onDelete: () {
+                      setModalState(() {
+                        if (currentVal.isNotEmpty) {
+                          currentVal =
+                              currentVal.substring(0, currentVal.length - 1);
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () {
+                      final parsed = int.tryParse(currentVal);
+                      Navigator.pop(context, parsed ?? 0);
+                    },
+                    style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48)),
+                    child: const Text('Confirmar'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (result != null && result > 0) {
+      setState(() => _target = result);
+    }
+  }
+
   Future<void> _save() async {
     final title = _titleCtrl.text.trim();
     if (title.isEmpty || _saving) return;
@@ -609,23 +685,47 @@ class _CreateGoalFormState extends ConsumerState<_CreateGoalForm> {
             ),
           ],
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _StepBtn(
-                  icon: Icons.remove_rounded,
-                  onTap: () =>
-                      setState(() => _target = (_target - 5).clamp(1, 5000))),
-              Text(
-                  '$_target ${goalUnitLabel(_unit)} · '
-                  '${goalFrequencyLabel(_freq).toLowerCase()}',
-                  style:
-                      text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-              _StepBtn(
-                  icon: Icons.add_rounded,
-                  onTap: () =>
-                      setState(() => _target = (_target + 5).clamp(1, 5000))),
-            ],
+          InkWell(
+            onTap: _pickTargetWithKeypad,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceHigh,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.violet.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Objetivo (${goalFrequencyLabel(_freq).toLowerCase()})',
+                        style: text.bodySmall?.copyWith(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$_target ${goalUnitLabel(_unit)}',
+                        style: text.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.violet,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Row(
+                    children: [
+                      Text('Toca para cambiar',
+                          style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                      SizedBox(width: 6),
+                      Icon(Icons.edit_rounded, color: AppColors.violet, size: 18),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
         const SizedBox(height: 16),

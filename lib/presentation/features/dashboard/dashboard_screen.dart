@@ -1,21 +1,26 @@
 import 'package:consis_app/core/theme/app_colors.dart';
 import 'package:consis_app/core/utils/greeting.dart';
+import 'package:consis_app/core/utils/screenshot_share.dart';
 import 'package:consis_app/core/utils/spanish_dates.dart';
 import 'package:consis_app/domain/entities/goal_type.dart';
 import 'package:consis_app/presentation/features/analytics/monthly_screen.dart';
 import 'package:consis_app/presentation/features/dashboard/dashboard_data.dart';
+import 'package:consis_app/presentation/features/dashboard/widgets/fasting_card.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/friction_nudge_card.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/goal_selector.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/goal_settings_sheet.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/nutrition_section.dart';
+import 'package:consis_app/presentation/features/dashboard/widgets/reminders_section.dart';
+import 'package:consis_app/presentation/features/dashboard/widgets/session_history_list.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/weigh_in_card.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/weekly_goal_card.dart';
-import 'package:consis_app/presentation/security/security_sheet.dart';
-import 'package:consis_app/presentation/features/dashboard/widgets/fasting_card.dart';
 import 'package:consis_app/presentation/providers/dashboard_providers.dart';
+import 'package:consis_app/presentation/security/security_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+final GlobalKey _dashboardShareKey = GlobalKey();
 
 /// Dashboard principal de ConsisApp (Fase 2).
 ///
@@ -38,8 +43,14 @@ class DashboardScreen extends ConsumerWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 620),
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
-                    child: _DashboardContent(data: data),
+                    child: RepaintBoundary(
+                      key: _dashboardShareKey,
+                      child: Container(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
+                        child: _DashboardContent(data: data),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -82,6 +93,10 @@ class _DashboardContent extends ConsumerWidget {
           const SizedBox(height: 16),
           const FrictionNudgeCard(),
         ],
+        const SizedBox(height: 16),
+        const SessionHistoryList(),
+        const SizedBox(height: 16),
+        const RemindersSection(),
         const SizedBox(height: 28),
         const _DevFooter(),
       ],
@@ -156,6 +171,15 @@ class _Header extends ConsumerWidget {
                       ?.copyWith(color: AppColors.textSecondary)),
             ],
           ),
+        ),
+        IconButton(
+          tooltip: 'Compartir mi progreso',
+          onPressed: () => ScreenshotShare.captureAndShare(
+            repaintKey: _dashboardShareKey,
+            context: context,
+          ),
+          icon: const Icon(Icons.share_rounded),
+          color: AppColors.cyan,
         ),
         IconButton(
           tooltip: 'Editar meta',

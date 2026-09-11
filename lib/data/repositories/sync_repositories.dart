@@ -26,17 +26,33 @@ class SyncSessionEntryRepository implements SessionEntryRepository {
   @override Future<void> add(SessionEntry entry) => _save(entry);
   
   @override Future<void> addSimple({required String goalId, required DateTime day, required int minutes, List<String> tags = const [], String? note}) async {
-    await _local.addSimple(goalId: goalId, day: day, minutes: minutes, tags: tags, note: note);
+    final entry = SessionEntry(
+      id: _local.newId(),
+      goalId: goalId,
+      day: day,
+      durationMinutes: minutes,
+      tags: tags,
+      note: note,
+      createdAt: DateTime.now(),
+    );
+    await _save(entry);
   }
   
   @override Future<void> finishFasting({required String entryId, required DateTime endAt}) async {
     await _local.finishFasting(entryId: entryId, endAt: endAt);
+    if (_shouldSync) {
+      final entries = await _local.findByDay(endAt);
+      final entry = entries.where((e) => e.id == entryId).firstOrNull;
+      if (entry != null) {
+        try { await remote.save(entry); } catch (e) { print('SUPABASE SYNC ERROR (finishFasting): $e'); }
+      }
+    }
   }
 
   Future<void> _save(SessionEntry e) async {
     await _local.add(e);
     if (_shouldSync) {
-      try { await remote.save(e); } catch (_) {}
+      try { await remote.save(e); } catch (err) { print('SUPABASE SYNC ERROR: $err'); }
     }
   }
 

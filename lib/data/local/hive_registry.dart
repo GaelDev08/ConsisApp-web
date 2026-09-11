@@ -18,6 +18,9 @@ abstract final class BoxNames {
   /// Perfil básico del usuario (saludo personalizado).
   static const String profile = 'user_profile';
 
+  /// Recordatorios independientes del usuario.
+  static const String reminders = 'reminders';
+
   static const List<String> all = [
     goals,
     sessions,
@@ -26,6 +29,7 @@ abstract final class BoxNames {
     nutrition,
     settings,
     profile,
+    reminders,
   ];
 }
 
@@ -38,4 +42,5 @@ abstract final class BoxTypeIds {
   static const int goal = 5;
   static const int activityEntry = 6;
   static const int userProfile = 7;
+  static const int reminder = 8;
 }
