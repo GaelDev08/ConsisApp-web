@@ -74,6 +74,69 @@ class WeightHistoryScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _addPastWeight(BuildContext context, WidgetRef ref) async {
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now.subtract(const Duration(days: 365 * 5)),
+      lastDate: now,
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.violet,
+            onPrimary: Colors.white,
+            surface: AppColors.surface,
+            onSurface: AppColors.textPrimary,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+
+    if (pickedDate == null || !context.mounted) return;
+
+    final ctrl = TextEditingController();
+    
+    final weight = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Peso para ${formatDateEs(pickedDate)}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 18)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+          style: const TextStyle(color: AppColors.textPrimary, fontSize: 24, fontWeight: FontWeight.bold),
+          decoration: const InputDecoration(
+            suffixText: 'kg',
+            hintText: 'Ej: 75.5'
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final val = double.tryParse(ctrl.text.trim());
+              if (val != null && val > 0) {
+                Navigator.pop(ctx, val);
+              }
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (weight != null) {
+      await ref.read(weightRecordRepositoryProvider).save(date: pickedDate, weightKg: weight);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
@@ -84,6 +147,12 @@ class WeightHistoryScreen extends ConsumerWidget {
         backgroundColor: AppColors.surface,
         title: const Text('Historial de Pesajes', style: TextStyle(fontWeight: FontWeight.w800)),
         centerTitle: true,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _addPastWeight(context, ref),
+        backgroundColor: AppColors.violet,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
       ),
       body: StreamBuilder<List<WeightRecord>>(
         stream: repo.watchAll(),

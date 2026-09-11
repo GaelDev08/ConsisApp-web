@@ -6,6 +6,9 @@ abstract interface class SessionEntryRepository {
   /// Todas las sesiones de todas las metas (reactivo).
   Stream<List<SessionEntry>> watchAll();
 
+  /// Descarga/sincroniza las sesiones desde Supabase.
+  Future<List<SessionEntry>> loadAll();
+
   /// Sesiones de UNA meta (reactivo) — desglose semanal por meta.
   Stream<List<SessionEntry>> watchByGoal(String goalId);
 

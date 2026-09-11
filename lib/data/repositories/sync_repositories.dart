@@ -18,8 +18,27 @@ class SyncSessionEntryRepository implements SessionEntryRepository {
 
   bool get _shouldSync => ref.read(authControllerProvider).signedInRemote;
 
-  @override Stream<List<SessionEntry>> watchAll() => _local.watchAll();
-  @override Stream<List<SessionEntry>> watchByGoal(String goalId) => _local.watchByGoal(goalId);
+  @override Stream<List<SessionEntry>> watchAll() async* {
+    if (_shouldSync) unawaited(loadAll());
+    yield* _local.watchAll();
+  }
+  
+  @override Stream<List<SessionEntry>> watchByGoal(String goalId) async* {
+    if (_shouldSync) unawaited(loadAll());
+    yield* _local.watchByGoal(goalId);
+  }
+  
+  @override 
+  Future<List<SessionEntry>> loadAll() async {
+    final localItems = await _local.loadAll();
+    if (_shouldSync) { 
+      remote.loadAll().then((cloudItems) { 
+        for(var c in cloudItems) _local.add(c); 
+      }); 
+    }
+    return localItems;
+  }
+  
   @override Future<List<SessionEntry>> findByDay(DateTime day) => _local.findByDay(day);
   @override String newId() => _local.newId();
   
@@ -62,7 +81,6 @@ class SyncSessionEntryRepository implements SessionEntryRepository {
   }
 }
 
-/*
 class SyncWeightRecordRepository implements WeightRecordRepository {
   SyncWeightRecordRepository({required WeightRecordRepository local, required this.remote, required this.ref}) : _local = local;
   final WeightRecordRepository _local;
@@ -70,7 +88,7 @@ class SyncWeightRecordRepository implements WeightRecordRepository {
   final Ref ref;
   bool get _shouldSync => ref.read(authControllerProvider).signedInRemote;
 
-  @override Stream<List<WeightRecord>> watchAll() => _local.watchAll();
+  @override Stream<List<WeightRecord>> watchAll() async* { if (_shouldSync) unawaited(loadAll()); yield* _local.watchAll(); }
   @override Future<List<WeightRecord>> loadAll() async {
     final localItems = await _local.loadAll();
     if (_shouldSync) { remote.loadAll().then((cloudItems) { for(var c in cloudItems) _local.save(c); }); }
@@ -94,7 +112,7 @@ class SyncNutritionCheckRepository implements NutritionCheckRepository {
   final Ref ref;
   bool get _shouldSync => ref.read(authControllerProvider).signedInRemote;
 
-  @override Stream<List<NutritionCheck>> watchAll() => _local.watchAll();
+  @override Stream<List<NutritionCheck>> watchAll() async* { if (_shouldSync) unawaited(loadAll()); yield* _local.watchAll(); }
   @override Future<List<NutritionCheck>> loadAll() async {
     final localItems = await _local.loadAll();
     if (_shouldSync) { remote.loadAll().then((cloudItems) { for(var c in cloudItems) _local.save(c); }); }
@@ -118,7 +136,7 @@ class SyncFrictionLogRepository implements FrictionLogRepository {
   final Ref ref;
   bool get _shouldSync => ref.read(authControllerProvider).signedInRemote;
 
-  @override Stream<List<FrictionLog>> watchAll() => _local.watchAll();
+  @override Stream<List<FrictionLog>> watchAll() async* { if (_shouldSync) unawaited(loadAll()); yield* _local.watchAll(); }
   @override Future<List<FrictionLog>> loadAll() async {
     final localItems = await _local.loadAll();
     if (_shouldSync) { remote.loadAll().then((cloudItems) { for(var c in cloudItems) _local.save(c); }); }
@@ -135,7 +153,6 @@ class SyncFrictionLogRepository implements FrictionLogRepository {
   }
 }
 
-*/
 // --- UserProfile ---
 class SyncUserProfileRepository implements UserProfileRepository {
   SyncUserProfileRepository({required UserProfileRepository local, required this.remote, required this.ref}) : _local = local;
@@ -149,7 +166,7 @@ class SyncUserProfileRepository implements UserProfileRepository {
     if (_shouldSync) { unawaited(remote.loadAll().then((cloudItems) { if (cloudItems.isNotEmpty) _local.save(cloudItems.first); })); }
     return localItem;
   }
-  @override Stream<UserProfile> watch() => _local.watch();
+  @override Stream<UserProfile> watch() async* { if (_shouldSync) unawaited(load()); yield* _local.watch(); }
   @override Future<void> save(UserProfile e) async {
     await _local.save(e);
     if (_shouldSync) { try { await remote.save(e); } catch (_) {} }
@@ -169,7 +186,7 @@ class SyncAppSettingsRepository implements AppSettingsRepository {
     if (_shouldSync) { unawaited(remote.loadAll().then((cloudItems) { if (cloudItems.isNotEmpty) _local.save(cloudItems.first); })); }
     return localItem;
   }
-  @override Stream<AppSettings> watch() => _local.watch();
+  @override Stream<AppSettings> watch() async* { if (_shouldSync) unawaited(load()); yield* _local.watch(); }
   @override Future<void> save(AppSettings e) async {
     await _local.save(e);
     if (_shouldSync) { try { await remote.save(e); } catch (_) {} }

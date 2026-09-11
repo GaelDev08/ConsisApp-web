@@ -17,6 +17,11 @@ class HiveSessionEntryRepository implements SessionEntryRepository {
       watchBoxMapped(_box, (m) => m.toEntity());
 
   @override
+  Future<List<SessionEntry>> loadAll() async {
+    return _box.values.map((m) => m.toEntity()).toList(growable: false);
+  }
+
+  @override
   Stream<List<SessionEntry>> watchByGoal(String goalId) async* {
     await for (final all in watchAll()) {
       yield all.where((e) => e.goalId == goalId).toList(growable: false);

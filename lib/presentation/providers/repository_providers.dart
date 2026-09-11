@@ -38,15 +38,27 @@ final sessionEntryRepositoryProvider = Provider<SessionEntryRepository>((ref) {
 });
 
 final weightRecordRepositoryProvider = Provider<WeightRecordRepository>((ref) {
-  return HiveWeightRecordRepository();
+  return SyncWeightRecordRepository(
+    local: HiveWeightRecordRepository(),
+    remote: SupabaseWeightRecordRepository(),
+    ref: ref,
+  );
 });
 
 final frictionLogRepositoryProvider = Provider<FrictionLogRepository>((ref) {
-  return HiveFrictionLogRepository();
+  return SyncFrictionLogRepository(
+    local: HiveFrictionLogRepository(),
+    remote: SupabaseFrictionLogRepository(),
+    ref: ref,
+  );
 });
 
 final nutritionCheckRepositoryProvider = Provider<NutritionCheckRepository>((ref) {
-  return HiveNutritionCheckRepository();
+  return SyncNutritionCheckRepository(
+    local: HiveNutritionCheckRepository(),
+    remote: SupabaseNutritionCheckRepository(),
+    ref: ref,
+  );
 });
 
 final appSettingsRepositoryProvider = Provider<AppSettingsRepository>((ref) {
