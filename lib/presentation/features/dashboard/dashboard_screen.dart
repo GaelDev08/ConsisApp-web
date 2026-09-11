@@ -15,6 +15,7 @@ import 'package:consis_app/presentation/features/dashboard/widgets/session_histo
 import 'package:consis_app/presentation/features/dashboard/widgets/weigh_in_card.dart';
 import 'package:consis_app/presentation/features/dashboard/widgets/weekly_goal_card.dart';
 import 'package:consis_app/presentation/providers/dashboard_providers.dart';
+import 'package:consis_app/presentation/features/dashboard/widgets/profile_sheet.dart';
 import 'package:consis_app/presentation/security/security_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -204,15 +205,18 @@ class _Header extends ConsumerWidget {
           color: AppColors.textSecondary,
         ),
         const SizedBox(width: 4),
-        Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            gradient: AppColors.goalGradient,
-            borderRadius: BorderRadius.circular(15),
+        GestureDetector(
+          onTap: () => showProfileSheet(context),
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              gradient: AppColors.goalGradient,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(Icons.person_rounded,
+                color: Colors.white, size: 26),
           ),
-          child: const Icon(Icons.center_focus_strong_rounded,
-              color: Colors.white, size: 26),
         ),
       ],
     );

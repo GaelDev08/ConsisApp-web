@@ -11,51 +11,130 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-/// Semáforo nutricional del dashboard: check-in de 1 tap para HOY
-/// + tira de los 7 días de la semana.
-class NutritionSection extends ConsumerWidget {
+/// Semáforo nutricional del dashboard: check-in de 1 tap + selector de fecha.
+class NutritionSection extends ConsumerStatefulWidget {
   final DashboardData data;
 
   const NutritionSection({super.key, required this.data});
 
-  void _setLevel(WidgetRef ref, NutritionLevel level) {
+  @override
+  ConsumerState<NutritionSection> createState() => _NutritionSectionState();
+}
+
+class _NutritionSectionState extends ConsumerState<NutritionSection> {
+  DateTime _selectedDay = DateTime.now();
+
+  bool get _isToday {
+    final now = DateTime.now();
+    return _selectedDay.year == now.year &&
+        _selectedDay.month == now.month &&
+        _selectedDay.day == now.day;
+  }
+
+  Future<void> _pickDay() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDay,
+      firstDate: now.subtract(const Duration(days: 365 * 2)),
+      lastDate: now,
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: ColorScheme.dark(
+            primary: AppColors.violet,
+            onPrimary: Colors.white,
+            surface: AppColors.surface,
+            onSurface: AppColors.textPrimary,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      setState(() => _selectedDay = picked);
+    }
+  }
+
+  void _setLevel(NutritionLevel level) {
     final repo = ref.read(nutritionCheckRepositoryProvider);
     unawaited(
       repo.setForDay(
         NutritionCheck(
           id: const Uuid().v4(),
-          day: DateTime.now(),
+          day: _selectedDay,
           level: level,
         ),
       ),
     );
   }
 
+  NutritionLevel? get _selectedDayLevel {
+    // For today, use the live dashboardData value
+    if (_isToday) return widget.data.todayNutrition;
+    // For past days we don't have live data - show nothing (will update after setForDay)
+    return null;
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
     return SectionCard(
       title: 'Semáforo nutricional',
-      subtitle: '¿Cómo comiste hoy?',
+      subtitle: _isToday ? '¿Cómo comiste hoy?' : '¿Cómo comiste ese día?',
       child: Column(
         children: [
+          // Date selector row
+          GestureDetector(
+            onTap: _pickDay,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.calendar_today_rounded,
+                      size: 15, color: AppColors.textSecondary),
+                  const SizedBox(width: 6),
+                  Text(
+                    _isToday
+                        ? 'Hoy'
+                        : '${_selectedDay.day}/${_selectedDay.month}/${_selectedDay.year}',
+                    style: text.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_drop_down_rounded,
+                      size: 16, color: AppColors.textMuted),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               for (final level in NutritionLevel.values)
                 _LevelButton(
                   level: level,
-                  selected: data.todayNutrition == level,
-                  onTap: () => _setLevel(ref, level),
+                  selected: _selectedDayLevel == level,
+                  onTap: () => _setLevel(level),
                 ),
             ],
           ),
           const SizedBox(height: 16),
-          WeekStrip(weekNutrition: data.weekNutrition),
+          WeekStrip(weekNutrition: widget.data.weekNutrition),
         ],
       ),
     );
   }
 }
+
 
 class _LevelButton extends StatelessWidget {
   final NutritionLevel level;

@@ -14,12 +14,15 @@ class ConsisApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsStreamProvider).valueOrNull;
+    final themeMode = settings?.themeMode ?? ThemeMode.dark;
+
     return MaterialApp(
       title: 'ConsisApp',
       debugShowCheckedModeBanner: false,
-      theme: buildDarkTheme(),
+      theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
-      themeMode: ThemeMode.dark,
+      themeMode: themeMode,
       home: const AuthGate(child: DashboardScreen()),
     );
   }
